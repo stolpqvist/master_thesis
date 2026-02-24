@@ -1,0 +1,5 @@
+
+
+
+
+class CNN(nn.Module)
