@@ -1,4 +1,5 @@
 import pandas as pd
+import torch
 from transformers import XLMRobertaForSequenceClassification, AutoTokenizer
 from collections import defaultdict
 
@@ -17,7 +18,10 @@ class DataProcessor:
             yield row
     
     def preprocessing(self, row):
-
+        
+        #TODO Do we want to yield it row by row, and that each item in the list is
+        #a row? Or do we want to simply process it row by row and train it as such
+        #TODO Figure out training sequence
         for row in self.row_yielder():
 
             row = [['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
@@ -26,6 +30,7 @@ class DataProcessor:
 
             #tokenized text (tuple/list)
             list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
+            
 
         def label_extractor(label: str) -> None:
 
@@ -33,8 +38,14 @@ class DataProcessor:
             self.id2label[label_id] = label
             
 
-        def feature_extractor(row):
+        def feature_extractor(row:list) -> list:
             """
             Extract each as 5 different fields
             """
-            pass
+            tok_list = []
+            for column in row:
+                tok_list.append(column)
+            return tok_list
+
+        def auto_tok(tok_list:list) -> torch.Tensor:
+            return self.tokenizer(tok_list)
