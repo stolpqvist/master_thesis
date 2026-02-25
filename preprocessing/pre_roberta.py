@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from transformers import XLMRobertaForSequenceClassification, AutoTokenizer
 from collections import defaultdict
-
+import sys
 
 class DataProcessor:
     def __init__(self, filename):
@@ -17,35 +17,38 @@ class DataProcessor:
         for _, row in df.iterrows():
             yield row
     
-    def preprocessing(self, row):
+    def preprocessing(self):
         
         #TODO Do we want to yield it row by row, and that each item in the list is
         #a row? Or do we want to simply process it row by row and train it as such
         #TODO Figure out training sequence
         for row in self.row_yielder():
 
-            row = [['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
+            def label_extractor(label: str) -> None:
+
+                label_id = self.label2id[label]
+                self.id2label[label_id] = label
+            
+            def auto_tok(column: str) -> torch.Tensor: 
+                #print(f"The text column is: {column}")
+                return self.tokenizer(column, return_tensors="pt")
+
+
+            row = row[['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
             
             label_extractor(row['TilldeladBeredningsgruppKortNamn'])
 
             #tokenized text (tuple/list)
-            list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
-            list_tok = [auto_tok(column) for column in row]
-            
+            #list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
+            to_tokenize = row.drop('TilldeladBeredningsgruppKortNamn')
+            #for each column in a row -> tokenize -> list of tesors of tokenized texts
+            list_tok = [auto_tok(column) for column in to_tokenize]
 
-        def label_extractor(label: str) -> None:
+            #print(f"Tokenised: {len(list_tok)}")
 
-            label_id = self.label2id[label]
-            self.id2label[label_id] = label
-            
 
-        def feature_extractor(row:list) -> list:
-            """
-            Extract each as 5 different fields
-            """
-            tok_list = []
-            for column in row:
-                tok_list.append(column)
-            return tok_list
-
-        def auto_tok(data:pandas.DataFrame, column) -> torch.Tensor: return self.tokenizer(data[column])
+if __name__ == "__main__":
+    file = sys.argv[1]
+    dp = DataProcessor(file)
+    dp.preprocessing()
+    
