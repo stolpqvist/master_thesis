@@ -1,10 +1,34 @@
+"""
+This module is the main module that handles the preprocessing required for the RoBERTa model.
+It takes a filename when creating the class, then handles id creation and preprocessing.
+It outputs a stacked tensor.
+
+
+"""
 import pandas as pd
 import torch
 from transformers import XLMRobertaForSequenceClassification, AutoTokenizer
 from collections import defaultdict
 import sys
 
+
+
+
+
 class DataProcessor:
+    """
+    This class handles dataprocessing of the RoBERTa model.
+
+    Attributes:
+        file, str = the path to a particular file
+        label2id, defaultdict(int) = the labels and their corresponding id's
+        id2label, dict = the ids and their corresponding labels
+        tokenizer, AutoTokenizer = the tokenizer chosen for the XLMRobertaForSequenceClassification model
+
+    Methods:
+        row_yielder = Opens and reads chosen dataframe and yields row by row
+        preprocessing = Processes the dataframe,
+    """
     def __init__(self, filename):
         self.file = filename
         self.label2id = defaultdict(lambda: len(self.label2id))
@@ -33,6 +57,9 @@ class DataProcessor:
                 #print(f"The text column is: {column}")
                 return self.tokenizer(column, return_tensors="pt")
 
+           # def stacker(list_pt:list[torch.Tensor]) -> torch.Tensor:
+           #     return torch.stack(list_pt, dim=0)
+
 
             row = row[['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
             
@@ -43,6 +70,7 @@ class DataProcessor:
             to_tokenize = row.drop('TilldeladBeredningsgruppKortNamn')
             #for each column in a row -> tokenize -> list of tesors of tokenized texts
             list_tok = [auto_tok(column) for column in to_tokenize]
+
 
             #print(f"Tokenised: {len(list_tok)}")
 
