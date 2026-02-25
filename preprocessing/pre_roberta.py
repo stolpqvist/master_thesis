@@ -7,7 +7,7 @@ It outputs a stacked tensor.
 """
 import pandas as pd
 import torch
-from transformers import XLMRobertaForSequenceClassification, AutoTokenizer
+from transformers import AutoTokenizer
 from collections import defaultdict
 import sys
 
@@ -71,8 +71,9 @@ class DataProcessor:
             #for each column in a row -> tokenize -> list of tesors of tokenized texts
             list_tok = [auto_tok(column) for column in to_tokenize]
 
-
+            
             #print(f"Tokenised: {len(list_tok)}")
+            return list_tok
 
 
 if __name__ == "__main__":

@@ -1,20 +1,43 @@
 import torch
-from transformers import AutoTokenizer, RobertForSequenceClassification
+from transformers import AutoModel, AutoConfig
+import torch.nn as nn
+from preprocessing.pre_roberta import DataProcessor
 
 
 
-tokeniser = AutoTokenizer.from_pretrained('FacebookAI/roberta-base')
-model = RobertForSequenceClassification.from_pretrained('FacebookAI/roberta-base')
+class CustomXLMRoberta(nn.Module):
+    def __init__(self, model_name="xlm-roberta-base", hidden_dropout=0.1):
+        super().__init__()
 
+        self.config = AutoConfig.from_pretrained(model_name)
+        self.backbone = AutoModel.from_pretrained(model_name)
 
+        #Custom head
 
-num_labels(model.config.id2label)
-model = XLMRobertaForSequenceClassification.from_pretrained(
-        'FacebookAI/roberta-base',
-        num_labels = num_labels,
-        problem_type = 'multi-label-classification',
-        lables= our_labels
+        self.projection = nn.Linear(self.config.hidden_size, 256)
+        self.dropout = nn.Dropout(hidden_dropout)
+    
+
+    def forward(self, input_ids, attention_mask = None, token_type_ids = None):
+        outputs = self.backbone(
+            input_ids = input_ids,
+            attention_mask = attention_mask,
+            token_type_ids = token_type_ids,
+            return_dict = True
         )
+        
+        cls_embedding = outputs.last_hidden_state[:,0,:]
+
+        x = self.dropout(cls_embedding)
+        x = self.projection(x)
+        return x
+    
+    def pooling(self, hidden_mask):
+        mask = mask.unsqueeze(-1).float() # (batch, seq, 1)
+        summed = (hidden * mask).sum(dim=1)
+        counts = mask.sum(dim=1)
+        return summed/counts
+
 
 
 
