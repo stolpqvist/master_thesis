@@ -30,6 +30,7 @@ class DataProcessor:
 
             #tokenized text (tuple/list)
             list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
+            list_tok = [auto_tok(column) for column in row]
             
 
         def label_extractor(label: str) -> None:
@@ -47,5 +48,4 @@ class DataProcessor:
                 tok_list.append(column)
             return tok_list
 
-        def auto_tok(tok_list:list) -> torch.Tensor:
-            return self.tokenizer(tok_list)
+        def auto_tok(data:pandas.DataFrame, column) -> torch.Tensor: return self.tokenizer(data[column])
