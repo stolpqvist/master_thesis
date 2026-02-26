@@ -11,7 +11,7 @@ class ModelTrain:
         self.epochs = n_epochs
         self.model = CustomXLMRoberta(num_classes=len(self.labels))
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
     
 
     def training_loop(self, model):
@@ -20,7 +20,7 @@ class ModelTrain:
 
         total_losses = 0
         all_preds = []
-        all_labels = ()
+        all_labels = []
 
         for epoch in range(self.epochs()):
             
@@ -33,16 +33,16 @@ class ModelTrain:
                 loss.backward()
                 self.optimizer.step()
 
-                total_loss += loss.item()
+                total_losses += loss.item()
                 preds = torch.argmax(logits, dim=1)
-                all_preds.extedn(preds.tolist())
+                all_preds.extend(preds.tolist())
                 all_labels.extend(labels.tolist())
             
             #accuracy per epoch
             correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
             accuracy = correct / len(all_labels)
 
-            print(f"Epoch {epoch + 1}/ {self.epochs} - loss: {total_loss:.4f}, accuracy: {accuracy:.4f}")
+            print(f"Epoch {epoch + 1}/ {self.epochs} - loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
 
 
 
