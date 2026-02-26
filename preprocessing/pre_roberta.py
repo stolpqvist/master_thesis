@@ -58,7 +58,7 @@ class DataProcessor:
             yield row
     
     def preprocessing(self):
-       """
+        """
         Handles the logic of preprocessing the data from the provided dataframe.
         It calls row yielder and then processes it with 2 inner functions.
         
@@ -70,7 +70,9 @@ class DataProcessor:
 
         Returns:
             list_tok(list(torch.Tensor)): all the extracted and tokenized columns as a list.
-       """ 
+        
+        """
+       
         for row in self.row_yielder():
 
             def label_extractor(label: str) -> None:
