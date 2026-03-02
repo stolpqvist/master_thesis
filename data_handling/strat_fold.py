@@ -7,7 +7,7 @@ class StratifiedFold:
         self.dataset = dataset
         self.k = k
         self.label2id = label2id
-        self.fold = []
+        self.folds = []
 
     def stratifier(self, df, column='TilldeladBeredningsgruppKortNamn'):
         col_lab = df[column].values
@@ -27,17 +27,15 @@ class StratifiedFold:
             val_indices = []
             train_indices = []
 
-            for class_id in class_indices:
-                indices = class_indices[class_id]
+            for class_id in range(n_classes):
+                mask = (y == class_id)
+                class_idx = np.where(class_mask)[0]
 
-                n_samples = len(indices)
+                start = fold * n_samples_per_class[class_id]
+                end = start + n_samples_per_class[class_id]
 
-                n_samples_per_fold = n_samples // self.k
-                remainder = n_samples % self.k
-                start = fold * n_samples_per_fold
-                end = start + n_samples_per_fold
-
-                if fold < remainder:
+                
+                if class_id < len(remainder) and fold < remainder[class_id]:
                     end += 1
                 val_indices.extend(indices[start:end])
 
@@ -50,4 +48,4 @@ class StratifiedFold:
 
     def __iter__(self):
         for train_idx, val_idx in self.folds:
-            yield np.array(train_indices), np.array(val_indices)
+            yield train_idx, val_indices
