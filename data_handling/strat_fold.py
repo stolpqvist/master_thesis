@@ -40,10 +40,10 @@ class StratifiedFold:
                 val_indices.extend(class_idx[start:end])
 
                 train_indices.extend(class_idx[:start] + class_idx[end:])
-            self.folds.append((np.array(train_indices), np.array(val_indices))
+            self.folds.append((np.array(train_indices), np.array(val_indices)))
 
             
 
     def __iter__(self):
         for train_idx, val_idx in self.folds:
-            yield train_idx, val_indices
+            yield train_idx, val_idx
