@@ -1,48 +1,105 @@
 from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch
 import torch.nn as nn
+import numpy as np
+
+class FieldDataset(Dataset):
+    def __init__(self, fields, labels):
+        self.fields = fields
+        self.labels = labels
+    
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+    
+        return (
+            self.fields[idx],
+            self.labels[idx]
+        )
 
 class ModelTrain:
-    def __init__(self, data, labels, learning_rate, n_epochs):
-        self.dataset = data
-        self.labels = labels
-        self.lr = learning_rate
+    def __init__(self, lr, n_epochs, batch_size, dropout):
+
+        self.lr = lr
         self.epochs = n_epochs
-        self.model = CustomXLMRoberta(num_classes=len(self.labels))
+        self.batch_size = batch_size
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr)
+        self.dropout = dropout
     
+    #How to handle DataProcessor??
+    #train_pr = DataProcessor(train_fold)
+    #train_pr.label_extractor(label_cl)
 
-    def training_loop(self, model):
+    def training_loop(self, data, label_cl):
 
+        #extr num_labels
+        train_labels = data[label_cl] #NOT tensors
+        num_classes = len(np.unique(train_labels))
+
+        #Prepare the data:
+        train_pr = DataProcessor(data)
+        train_pr.label_extractor(label_cl)
+
+
+        train_data = train_pr.preprocessing() #Tensors # list of 5 dicts, each (N, 512)
+
+        #Labels to tensors
+
+        label_tensor = torch.tensor(list(train_pr.id2label.keys()), dtype=torch.long)
+
+        #Init the model
+
+        model = CustomXLMRoberta(
+                    num_classes=num_classes,
+                    hidden_dropout=self.dropout
+                )   
+        
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
+        
         model.train()
+
+        
+        #Building datasets
+        train_dataset = FieldDataset(train_data, label_tensor)
+        train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=False)
 
         total_losses = 0
         all_preds = []
         all_labels = []
+        # Main
+        # -Trainer
+        # -- Stratify
 
-        for epoch in range(self.epochs()):
-            
-            for data, labels in self.dataset:
-                self.optimizer.zero_grad()
+        for epoch in range(self.epochs):
+                        
+            for fields, b_labels in train_dataloader:
 
-                logits = self.model(data) #batch, num_classes
-                loss = self.criterion(logits, labels)
+                optimizer.zero_grad()
+
+                logits = model(fields) #predictions
+                loss = self.criterion(logits, b_labels)
 
                 loss.backward()
-                self.optimizer.step()
+                optimizer.step()
 
                 total_losses += loss.item()
                 preds = torch.argmax(logits, dim=1)
+                
                 all_preds.extend(preds.tolist())
-                all_labels.extend(labels.tolist())
+                all_labels.extend(b_labels.tolist())
             
             #accuracy per epoch
             correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
             accuracy = correct / len(all_labels)
 
-            print(f"Epoch {epoch + 1}/ {self.epochs} - loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
+            print(f"Epoch {epoch + 1}/ {self.epochs}, loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
+        
+        #return model
+
+        #EVALUATION
 
 
 

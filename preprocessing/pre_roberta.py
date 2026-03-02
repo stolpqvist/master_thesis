@@ -20,6 +20,7 @@ import pandas as pd
 import torch
 from transformers import AutoTokenizer
 from collections import defaultdict
+import numpy as np
 
 
 
@@ -39,8 +40,8 @@ class DataProcessor:
         row_yielder = Opens and reads chosen dataframe and yields row by row
         preprocessing = Processes the dataframe,
     """
-    def __init__(self, filename):
-        self.file = filename
+    def __init__(self, df):
+        self.df = df
         self.label2id = defaultdict(lambda: len(self.label2id))
         self.id2label = {}
         self.tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
@@ -53,9 +54,24 @@ class DataProcessor:
         Return/Yields:
             row, list[str] = the data of the dataframe from a particular row
         """
-        df = pd.read_csv(self.file)
-        for _, row in df.iterrows():
+        #df = pd.read_csv(self.file)
+        for _, row in self.df.iterrows():
             yield row
+    
+    def label_extractor(self, label: str) -> None:
+        """
+        Extracts the labels and enters it into a defauldict to handle label -> id and
+        id -> label assignment.
+        """
+
+        col_lab = self.df[label].values
+
+        labels = np.unique(col_lab)
+
+        #add to labels
+        for label in labels:
+            label_id = self.label2id[label]
+            self.id2label[label_id] = label 
     
     def preprocessing(self):
         """
@@ -72,41 +88,33 @@ class DataProcessor:
             list_tok(list(torch.Tensor)): all the extracted and tokenized columns as a list.
         
         """
-       
+        all_rows = []
         for row in self.row_yielder():
 
-            def label_extractor(label: str) -> None:
-                """
-                Extracts the labels and enters it into a defauldict to handle label -> id and
-                id -> label assignment.
-                """
-
-                label_id = self.label2id[label] 
-                self.id2label[label_id] = label
             
             def auto_tok(column: str) -> torch.Tensor: 
                 """
                 Takes a given column as a string and returns a tokenized torch.Tensor
                 """
-                return self.tokenizer(column, return_tensors="pt")
-
-           # def stacker(list_pt:list[torch.Tensor]) -> torch.Tensor:
-           #     return torch.stack(list_pt, dim=0)
-
+                tok = self.tokenizer(column, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
+                
+                return {
+        "input_ids":      tok["input_ids"].squeeze(0),       # (1, 512) → (512,)
+        "attention_mask": tok["attention_mask"].squeeze(0)   # (1, 512) → (512,)
+    }
 
             row = row[['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
             
-            label_extractor(row['TilldeladBeredningsgruppKortNamn'])
 
             #tokenized text (tuple/list)
             #list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
             to_tokenize = row.drop('TilldeladBeredningsgruppKortNamn')
             #for each column in a row -> tokenize -> list of tesors of tokenized texts
             list_tok = [auto_tok(column) for column in to_tokenize]
-
             
+            all_rows.append(list_tok)
             #print(f"Tokenised: {len(list_tok)}")
-            return list_tok
+        return all_rows
 
 
 if __name__ == "__main__":

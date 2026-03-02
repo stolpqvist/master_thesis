@@ -1,17 +1,24 @@
 from collections import defaultdict
-from numpy import np 
+import numpy as np 
 
 class StratifiedFold:
 
-    def __init__(self, dataset, k=10, label2id=None):
-        self.dataset = dataset
+    def __init__(self, k=10):
         self.k = k
-        self.label2id = label2id
         self.folds = []
 
     def stratifier(self, df, column='TilldeladBeredningsgruppKortNamn'):
+
+        label2id = defaultdict(lambda: len(label2id))
+
         col_lab = df[column].values
-        col_val = np.array([self.label2id[label] for label in col_lab])
+
+        labels = np.unique(col_lab)
+
+        #add to labels
+        [label2id[label] for label in labels]
+        
+        col_val = np.array([label2id[label] for label in col_lab])
 
 
         n_classes = len(np.unique(col_val))
@@ -28,7 +35,7 @@ class StratifiedFold:
             train_indices = []
 
             for class_id in range(n_classes):
-                mask = (y == class_id)
+                mask = (col_val == class_id)
                 class_idx = np.where(mask)[0]
 
                 start = fold * n_samples_per_class[class_id]
@@ -39,11 +46,12 @@ class StratifiedFold:
                     end += 1
                 val_indices.extend(class_idx[start:end])
 
-                train_indices.extend(class_idx[:start] + class_idx[end:])
+                train_indices.extend(np.concatenate([class_idx[:start], class_idx[end:]]))
+                
             self.folds.append((np.array(train_indices), np.array(val_indices)))
 
             
 
     def __iter__(self):
-        for train_idx, val_idx in self.folds:
-            yield train_idx, val_idx
+        for train_ids, val_ids in self.folds:
+            yield train_ids, val_ids
