@@ -2,7 +2,7 @@ import argparse
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.model_selection import LeaveOneOut, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
 
 from preprocessing.pre_roberta import DataProcessor
@@ -74,14 +74,19 @@ def main():
 
     
     if args.sp:
-        loo = LeaveOneOut()
-        indices = df_trainval.index.to_numpy()
+        kf = KFold(n_splits=10, shuffle=False)
+        
+
+
+        #indices = df_trainval.index.to_numpy()
+        
         fold_results = []
 
-        print(f"\nStarting LOO cross-validation ({len(indices)} folds)...")
-        
-        for fold, (train_idx, val_idx) in enumerate(loo.split(indices)):
-            print(f"\n── LOO fold {fold + 1}/{len(indices)} ──")
+        print(f"\nStarting KFold cross-validation ({len(indices)} folds)...")
+        labels = df['TilldeladBeredningsgruppKortNamn']
+        data = df[['Beskrivning', 'BeskrivningEng', 'AnsökanTitelEng', 'AnsökanTitel']]
+        for fold, (train_idx, val_idx) in enumerate(kf.split(data, labels)):
+            print(f"\n── KFold fold {fold + 1}/{len(indices)} ──")
             
             df_fold_train = df_trainval.iloc[train_idx].reset_index(drop=True)
             df_fold_val   = df_trainval.iloc[val_idx].reset_index(drop=True)
