@@ -15,7 +15,7 @@ class StratifiedFold:
 
 
         n_classes = len(np.unique(col_val))
-        n_samples = len(col_val)
+        #n_samples = len(col_val)
 
         class_counts = np.bincount(col_val)
         n_samples_per_class = class_counts // self.k
@@ -29,7 +29,7 @@ class StratifiedFold:
 
             for class_id in range(n_classes):
                 mask = (y == class_id)
-                class_idx = np.where(class_mask)[0]
+                class_idx = np.where(mask)[0]
 
                 start = fold * n_samples_per_class[class_id]
                 end = start + n_samples_per_class[class_id]
@@ -37,14 +37,12 @@ class StratifiedFold:
                 
                 if class_id < len(remainder) and fold < remainder[class_id]:
                     end += 1
-                val_indices.extend(indices[start:end])
+                val_indices.extend(class_idx[start:end])
 
-                train_indices.extend(indices[:start] + indices[end:])
+                train_indices.extend(class_idx[:start] + class_idx[end:])
             self.folds.append((np.array(train_indices), np.array(val_indices))
 
             
-
-
 
     def __iter__(self):
         for train_idx, val_idx in self.folds:
