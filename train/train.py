@@ -19,7 +19,13 @@ class ModelTrain:
 
     def training_loop(self, data, label_cl):
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        elif torch.backends.mps.is_available():
+            device = torch.device("mps")
+        else:
+            device = torch.device("cpu")
+
         print(f"Training on: {device}")
 
         #extr num_labels
@@ -35,7 +41,8 @@ class ModelTrain:
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=4,
-            pin_memory=True)
+            pin_memory=False
+        )
 
         print("Data loaded successfully")
 
@@ -47,7 +54,7 @@ class ModelTrain:
                 ).to(device)   
         
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
-        scaler = torch.cuda.amp.GradScaler(device)
+        #scaler = torch.cuda.amp.GradScaler(device)
 
         model.train()
 
@@ -64,6 +71,7 @@ class ModelTrain:
 
                 fields = {k: v.to(device) for k, v in fields.items()}
                 b_labels = b_labels.to(device)
+
                 optimizer.zero_grad()
 
                 logits = model(fields) #predictions
@@ -72,11 +80,11 @@ class ModelTrain:
                 with torch.autocast(device_type=device.type):
                     logits = model(fields)
                     loss = self.criterion(logits, b_labels)
-                #loss.backward()
-                #optimizer.step()
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+                loss.backward()
+                optimizer.step()
+                #scaler.scale(loss).backward()
+                #scaler.step(optimizer)
+                #scaler.update()
 
                 total_losses += loss.item()
                 preds = torch.argmax(logits, dim=1)
