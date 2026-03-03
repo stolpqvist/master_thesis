@@ -19,6 +19,9 @@ class ModelTrain:
 
     def training_loop(self, data, label_cl):
 
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Training on: {device}")
+
         #extr num_labels
         #train_labels = data[label_cl] #NOT tensors
         #num_classes = len(np.unique(train_labels))
@@ -26,7 +29,13 @@ class ModelTrain:
         #Prepare the data:
         train_fold = DataProcessor(data)
         train_fold.label_extractor()
-        train_dataloader = DataLoader(train_fold, batch_size=self.batch_size, shuffle=False)
+
+        train_dataloader = DataLoader(
+            train_fold,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=4,
+            pin_memory=True)
 
         print("Data loaded successfully")
 
@@ -35,39 +44,45 @@ class ModelTrain:
         model = CustomXLMRoberta(
                     num_classes=len(train_fold.label2id.keys()),
                     hidden_dropout=self.dropout
-                )   
+                ).to(device)   
         
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
-        
+        scaler = torch.cuda.amp.GradScaler(device)
+
         model.train()
 
         
         #Building datasets
 
-        total_losses = 0
-        all_preds = []
-        all_labels = []
-        # Main
-        # -Trainer
-        # -- Stratify
-
         for epoch in range(self.epochs):
+
+            total_losses = 0
+            all_preds = []
+            all_labels = []
                         
             for fields, b_labels in train_dataloader:
 
+                fields = {k: v.to(device) for k, v in fields.items()}
+                b_labels = b_labels.to(device)
                 optimizer.zero_grad()
 
                 logits = model(fields) #predictions
                 loss = self.criterion(logits, b_labels)
 
-                loss.backward()
-                optimizer.step()
+                with torch.autocast(device_type=device.type):
+                    logits = model(fields)
+                    loss = self.criterion(logits, b_labels)
+                #loss.backward()
+                #optimizer.step()
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
                 total_losses += loss.item()
                 preds = torch.argmax(logits, dim=1)
                 
-                all_preds.extend(preds.tolist())
-                all_labels.extend(b_labels.tolist())
+                all_preds.extend(preds.cpu().tolist())
+                all_labels.extend(b_labels.cpu().tolist())
             
             #self.evaluate(model, val_data, label_cl)
             #accuracy per epoch

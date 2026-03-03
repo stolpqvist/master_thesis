@@ -22,7 +22,7 @@ def main():
     parser.add_argument('-dr', type=float, default=0.5)
     parser.add_argument('-lr', type=float, default=0.0001)
     parser.add_argument('-e', type=int, default=10) #epochs
-    parser.add_argument('--batch_size', '-b', type=int, default=4)
+    parser.add_argument('--batch_size', '-b', type=int, default=10)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
     args = parser.parse_args()
@@ -57,7 +57,13 @@ def main():
 
     if args.tr:
         file = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
-        df = pd.read_csv(file)
+        df = pd.read_csv(file, usecols=[
+            "TilldeladBeredningsgruppKortNamn",
+            "AnsökanTitel",
+            "AnsökanTitelEng",
+            "Beskrivning",
+            "Nyckelord"
+        ])
 
         label_cl = 'TilldeladBeredningsgruppKortNamn'
 
@@ -85,6 +91,7 @@ def main():
             
             #trainer.eval_loop(val_fold)
             
+            del trainer
             #val_pr = DataProcessor(val_fold)
 
 
