@@ -22,7 +22,7 @@ def main():
     parser.add_argument('-dr', type=float, default=0.5)
     parser.add_argument('-lr', type=float, default=0.0001)
     parser.add_argument('-e', type=int, default=10) #epochs
-    parser.add_argument('--batch_size', '-b', type=int, default=32)
+    parser.add_argument('--batch_size', '-b', type=int, default=4)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
     args = parser.parse_args()
