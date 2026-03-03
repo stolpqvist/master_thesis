@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import torch
 import torch.nn as nn
 import numpy as np
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 
 
 
@@ -74,8 +75,8 @@ class ModelTrain:
 
                 optimizer.zero_grad()
 
-                logits = model(fields) #predictions
-                loss = self.criterion(logits, b_labels)
+                #logits = model(fields) #predictions
+                #loss = self.criterion(logits, b_labels)
 
                 with torch.autocast(device_type=device.type):
                     logits = model(fields)
@@ -92,12 +93,26 @@ class ModelTrain:
                 all_preds.extend(preds.cpu().tolist())
                 all_labels.extend(b_labels.cpu().tolist())
             
-            #self.evaluate(model, val_data, label_cl)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data, label_cl)
             #accuracy per epoch
-            correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
-            accuracy = correct / len(all_labels)
+            accuracy = accuracy_score(all_labels, all_preds)
+            prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
+            
+            print(f"Epoch: {epoch + 1} \
+                  Accuracy: {accuracy} \
+                  Precision: {prec} \
+                  Recall: {rec} \
+                  Macro F1-score {f1}")
 
-            print(f"Epoch {epoch + 1}/ {self.epochs}, loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
+            print(f"--------Validation Scores------ \
+                    V Accuracy: {val_acc} \
+                    V Precision: {val_prec} \
+                    V Recall: {val_rec} \
+                    V Macro F1-score: {val_f1}")
+            #correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
+            #accuracy = correct / len(all_labels)
+
+            #print(f"Epoch {epoch + 1}/ {self.epochs}, loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
         
         #return model
 
@@ -107,13 +122,34 @@ class ModelTrain:
         all_pred = []
         true_labels = []
         
-        val_pr = DataProcessor(val_data)
-        val_pr.label_extractor(label_cl)
+        val_fold = DataProcessor(val_data)
+        val_fold.label_extractor()
 
-        val_data = val_pr.preprocessing()
+        val_dataloader = DataLoader(
+                val_fold,
+                batch_size =    self.batch_size
+                shuffle =       True,
+                num_workers =   4,
+                pin_memory =    False
+                )
+        with torch.no_grad()
+            for fields, b_labels in val_dataloader:
+                fields = {k: v.to(device) for k,v in fields.items()}
+                b_labels = b_labels.to(device)
 
-        val_tensor = TensorDataset(val_data)
+                with torch.autocast(device_type=device.type):
+                    logits = model(fields)
+                    loss = self.criterion(logits, b_labels)
 
+                total_loss += loss.item()
+                preds = torch.argmax(logits, dim = 1)
+
+                all_preds.extend(preds.cpu().tolist())
+                all_labels.extend(b_labels.cpu().tolist())
+        accuracy = accuracy_score(all_labels, all_preds)
+        prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division = 0)
+
+        return accuracy, prec, rec, f1
         #with torch.no_grad():
            # for fields, b_labels in d
 
