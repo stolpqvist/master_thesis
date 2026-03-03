@@ -33,6 +33,23 @@ class ModelTrain:
     #train_pr = DataProcessor(train_fold)
     #train_pr.label_extractor(label_cl)
 
+    def evaluate(self, model, val_data, label_cl):
+        model.eval()
+        losses = []
+        all_pred = []
+        true_labels = []
+        
+        val_pr = DataProcessor(val_data)
+        val_pr.label_extractor(label_cl)
+
+        val_data = val_pr.preprocessing()
+
+        val_tensor = TensorDataset(val_data)
+
+        #with torch.no_grad():
+           # for fields, b_labels in da
+
+
     def training_loop(self, data, label_cl):
 
         #extr num_labels
@@ -48,7 +65,7 @@ class ModelTrain:
 
         #Labels to tensors
 
-        label_tensor = torch.tensor(list(train_pr.id2label.keys()), dtype=torch.long)
+        label_tensor = torch.tensor(list(train_pr.label2id[label] for label in train_labels), dtype=torch.long)
 
         #Init the model
 
@@ -91,6 +108,7 @@ class ModelTrain:
                 all_preds.extend(preds.tolist())
                 all_labels.extend(b_labels.tolist())
             
+            self.evaluate(model, val_data, label_cl)
             #accuracy per epoch
             correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
             accuracy = correct / len(all_labels)

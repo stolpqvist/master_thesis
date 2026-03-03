@@ -17,7 +17,7 @@ Returns:
 
 """
 import pandas as pd
-import torch
+from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 from collections import defaultdict
 import numpy as np
@@ -26,7 +26,7 @@ import numpy as np
 
 
 
-class DataProcessor:
+class DataProcessor(Dataset):
     """
     This class handles dataprocessing of the RoBERTa model.
 
