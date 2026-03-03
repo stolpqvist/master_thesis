@@ -21,7 +21,14 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 from collections import defaultdict
 import numpy as np
+import torch
 
+COLUMN_BUDGETS = {
+    "AnsökanTitel":         64,
+    "AnsökanTitelEng":      64,
+    "Beskrivning":          319,
+    "Nyckelord":            45,
+}
 
 
 
@@ -45,81 +52,57 @@ class DataProcessor(Dataset):
         self.label2id = defaultdict(lambda: len(self.label2id))
         self.id2label = {}
         self.tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
+        self.text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
+        self.label_column = 'TilldeladBeredningsgruppKortNamn'
 
-    def row_yielder(self):
-        """
-        Reads the class instance of self.file, opens the csv file and yields the file
-        row by row.
 
-        Return/Yields:
-            row, list[str] = the data of the dataframe from a particular row
-        """
-        #df = pd.read_csv(self.file)
-        for _, row in self.df.iterrows():
-            yield row
-    
-    def label_extractor(self, label: str) -> None:
+    def label_extractor(self) -> None:
         """
         Extracts the labels and enters it into a defauldict to handle label -> id and
         id -> label assignment.
         """
 
-        col_lab = self.df[label].values
-
-        labels = np.unique(col_lab)
-
         #add to labels
-        for label in labels:
+        for label in np.unique(self.df[self.label_column].values):
             label_id = self.label2id[label]
-            self.id2label[label_id] = label 
+            self.id2label[label_id] = label
+
+    def __len__(self):
+        return len(self.df)
     
-    def preprocessing(self):
-        """
-        Handles the logic of preprocessing the data from the provided dataframe.
-        It calls row yielder and then processes it with 2 inner functions.
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
         
-        Inner functions:
-            label_extractor(str): extract and handles the label logic of assigning each label a value
-                                  and each value a label for label identification.
-
-            auto_tok(str): tokenizes a given column and returns it as a tensor.
-
-        Returns:
-            list_tok(list(torch.Tensor)): all the extracted and tokenized columns as a list.
+        all_input_ids = [torch.tensor([self.tokenizer.cls_token_id])]
+        all_attention_masks = [torch.tensor([1])]
         
-        """
-        all_rows = []
-        for row in self.row_yielder():
 
-            
-            def auto_tok(column: str) -> torch.Tensor: 
-                """
-                Takes a given column as a string and returns a tokenized torch.Tensor
-                """
-                tok = self.tokenizer(column, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
-                
-                return {
-        "input_ids":      tok["input_ids"].squeeze(0),       # (1, 512) → (512,)
-        "attention_mask": tok["attention_mask"].squeeze(0)   # (1, 512) → (512,)
-    }
+        for col, budget in COLUMN_BUDGETS.items():
+            tok = self.tokenizer(
+                str(row[col]),
+                max_length=budget,
+                truncation = True,
+                padding = "max_length",
+                add_special_tokens = False,
+                return_tensors="pt"
+            )
 
-            row = row[['TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]]
-            
+            all_input_ids.append(tok["input_ids"].squeeze(0))
+            all_attention_masks.append(tok["attention_mask"].squeeze(0))
+        
+        all_input_ids.append(torch.tensor([self.tokenizer.sep_token_id]))
+        all_attention_masks.append(torch.tensor([1]))
 
-            #tokenized text (tuple/list)
-            #list_tokenized_text = feature_extractor(row[["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "Nyckelord"]])
-            to_tokenize = row.drop('TilldeladBeredningsgruppKortNamn')
-            #for each column in a row -> tokenize -> list of tesors of tokenized texts
-            list_tok = [auto_tok(column) for column in to_tokenize]
-            
-            all_rows.append(list_tok)
-            #print(f"Tokenised: {len(list_tok)}")
-        return all_rows
+        label = self.label2id[row[self.label_column]]
+
+        return {
+            "input_ids": torch.cat(all_input_ids),
+            "attention_mask": torch.cat(all_attention_masks)
+        }, torch.tensor(label, dtype=torch.long)
+
+    
+     
 
 
-if __name__ == "__main__":
-    import sys
-    file = sys.argv[1]
-    dp = DataProcessor(file)
-    dp.preprocessing()
+
     
