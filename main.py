@@ -19,10 +19,10 @@ def main():
     parser.add_argument('-bg', type=str, default='NT')
     parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
     parser.add_argument('-md', type=str, default= 'roberta') #model
-    parser.add_argument('-dr', type=float, default=0.5)
-    parser.add_argument('-lr', type=float, default=0.0001)
+    parser.add_argument('-dr', type=float, default=0.1)
+    parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=10) #epochs
-    parser.add_argument('--batch_size', '-b', type=int, default=10)
+    parser.add_argument('--batch_size', '-b', type=int, default=5)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
     args = parser.parse_args()
@@ -86,7 +86,7 @@ def main():
                 dropout= args.dr
                 )
 
-            trainer.training_loop(train_fold, label_cl)
+            trainer.training_loop(train_fold, val_fold, label_cl)
             
             
             #trainer.eval_loop(val_fold)
