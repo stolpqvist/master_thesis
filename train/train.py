@@ -29,6 +29,8 @@ class ModelTrain:
         #TODO Implement random parameter generation
         #TODO Implement writing to file
         #TODO Implement constructor that constructs folders as needed
+        #TODO Implement early stopping to reduce training time
+        #TODO Implement model saving
         print(f"Training on: {self.device}")
 
         #extr num_labels
