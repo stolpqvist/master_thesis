@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
-
+from transformers import get_cosine_schedule_with_warmup
 
 
 class ModelTrain:
@@ -27,10 +27,10 @@ class ModelTrain:
 
     def training_loop(self, data, val_data, label_cl):
         #TODO Implement random parameter generation
-        #TODO Implement writing to file
+        #TODO Implement writing to file ✅
         #TODO Implement constructor that constructs folders as needed
-        #TODO Implement early stopping to reduce training time
-        #TODO Implement model saving
+        #TODO Implement early stopping to reduce training time ✅
+        #TODO Implement model saving  ✅
         print(f"Training on: {self.device}")
 
         #extr num_labels
@@ -61,16 +61,38 @@ class ModelTrain:
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
         scaler = torch.amp.GradScaler(self.device)
 
+
+        #Warmup for the model 
+
+        total_steps = len(train_dataloader) * self.epochs
+        warmup_steps = int(total_steps * 0.06)
+
+
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=warmup_steps,
+            num_training_steps=total_steps
+        )
+
         model.train()
 
         
-        #Building datasets
+        #STarting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
+        #Here -> saving the best model per epoch
+         
 
         for epoch in range(self.epochs):
 
             total_losses = 0
             all_preds = []
             all_labels = []
+            best_val_f1 = 0
+            best_model = None
+
+            best_acc = 0
+            best_rec = 0
+            best_prec = 0
+
                         
             for fields, b_labels in train_dataloader:
 
@@ -88,8 +110,20 @@ class ModelTrain:
                 #loss.backward()
                 #optimizer.step()
                 scaler.scale(loss).backward()
+
+                #for warmup ONLY
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                scale_before = scaler.get_scale()
+                #############
+
                 scaler.step(optimizer)
                 scaler.update()
+
+                #####################
+                if scale_before <= scaler.get_scale():
+                    scheduler.step()
+                ####################
 
                 total_losses += loss.item()
                 preds = torch.argmax(logits, dim=1)
@@ -102,6 +136,7 @@ class ModelTrain:
             accuracy = accuracy_score(all_labels, all_preds)
             prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
             
+
             print(f"Epoch: {epoch + 1} \n\
                   Accuracy: {accuracy} \n \
                   Precision: {prec} \n \
@@ -113,12 +148,20 @@ class ModelTrain:
                     V Precision: {val_prec} \n \
                     V Recall: {val_rec} \n \
                     V Macro F1-score: {val_f1}\n ")
-            #correct = sum(pred == label for pred, label in zip(all_preds, all_labels))
-            #accuracy = correct / len(all_labels)
-
-            #print(f"Epoch {epoch + 1}/ {self.epochs}, loss: {total_losses:.4f}, accuracy: {accuracy:.4f}")
+            
+            #early stopping for 1 fold
+            if val_f1 > best_val_f1:
+                best_val_f1 = val_f1
+                best_model = model
+                epoch = epoch
+                best_acc = val_acc
+                best_prec = val_prec
+                best_rec = val_rec
+            else:
+                return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
+            
         
-        #return model
+
 
     def evaluate(self, model, val_data, label_cl):
         model.eval()
@@ -154,9 +197,7 @@ class ModelTrain:
         prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division = 0)
 
         return accuracy, prec, rec, f1
-        #with torch.no_grad():
-           # for fields, b_labels in d
-
+      
 
 
 

@@ -24,6 +24,7 @@ def main():
     parser.add_argument('-e', type=int, default=10) #epochs
     parser.add_argument('--batch_size', '-b', type=int, default=5)
     parser.add_argument('-tr', action='store_true', default=False)
+    parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
     args = parser.parse_args()
 
@@ -66,11 +67,14 @@ def main():
         ])
 
         label_cl = 'TilldeladBeredningsgruppKortNamn'
-
-
         
         sfold = StratifiedFold(k=10)
         sfold.stratifier(df, label_cl)
+
+        best_f1_from_all_folds = 0
+        best_model_from_all_folds = None #because we will test all parameters and have the best model for EACH parameter
+    
+        #to get the best model per fold -> we need to compare all models from 10 epochs
 
         #train/ val indices - Training loop 9/1 - Repeat (K=10)
         for train_ids, val_ids in sfold:
@@ -86,13 +90,92 @@ def main():
                 dropout= args.dr
                 )
 
-            trainer.training_loop(train_fold, val_fold, label_cl)
-            
-            
-            #trainer.eval_loop(val_fold)
+            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+
+            #Tracking the best model from 10 folds:
+            if f1 > best_f1_from_all_folds:
+                best_f1_from_all_folds = f1
+                best_model_from_all_folds = model
+                best_acc = acc
+                best_prec = prec
+                best_rec = rec
+                epoch = epoch
+    
             
             del trainer
-            #val_pr = DataProcessor(val_fold)
+
+
+        #Saving the best model from all 10 folds per parameter 
+        torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
+
+
+        #Save results into the file
+        with open('Results.txt', 'a') as r_file:
+            r_file.write(f"Model, Dropout: {args.dr}, LR: {args.lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec}")
+        
+    if args.param_hunt:
+
+        ##NEEDS FINISHING
+
+        file = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
+        df = pd.read_csv(file, usecols=[
+            "TilldeladBeredningsgruppKortNamn",
+            "AnsökanTitel",
+            "AnsökanTitelEng",
+            "Beskrivning",
+            "Nyckelord"
+        ])
+
+        label_cl = 'TilldeladBeredningsgruppKortNamn'
+        
+        sfold = StratifiedFold(k=10)
+        sfold.stratifier(df, label_cl)
+
+        best_f1_from_all_folds = 0
+        best_model_from_all_folds = None #because we will test all parameters and have the best model for EACH parameter
+    
+        #to get the best model per fold -> we need to compare all models from 10 epochs
+
+        #train/ val indices - Training loop 9/1 - Repeat (K=10)
+        for train_ids, val_ids in sfold:
+
+            train_fold=df.iloc[train_ids]
+            val_fold=df.iloc[val_ids]
+
+            
+            trainer = ModelTrain(
+                lr=args.lr,
+                n_epochs=args.e,
+                batch_size = args.batch_size,
+                dropout= args.dr
+                )
+
+            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+
+            #Tracking the best model from 10 folds:
+            if f1 > best_f1_from_all_folds:
+                best_f1_from_all_folds = f1
+                best_model_from_all_folds = model
+                best_acc = acc
+                best_prec = prec
+                best_rec = rec
+                epoch = epoch
+    
+            
+            del trainer
+
+
+        #Saving the best model from all 10 folds per parameter 
+        torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
+
+
+        #Save results into the file
+        with open('Results.txt', 'a') as r_file:
+            r_file.write(f"Model, Dropout: {args.dr}, LR: {args.lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec}")
+        
+
+
+
 
 
 
