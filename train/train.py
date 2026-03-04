@@ -26,7 +26,7 @@ class ModelTrain:
 
 
     def training_loop(self, data, val_data, label_cl):
-        #TODO Implement random parameter generation
+        #TODO Implement random parameter generation ✅
         #TODO Implement writing to file ✅
         #TODO Implement constructor that constructs folders as needed
         #TODO Implement early stopping to reduce training time ✅
@@ -58,7 +58,7 @@ class ModelTrain:
                     hidden_dropout=self.dropout
                 ).to(self.device)   
         
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=0.01) #weight_decay can be removed
         scaler = torch.amp.GradScaler(self.device)
 
 
@@ -119,7 +119,8 @@ class ModelTrain:
 
                 scaler.step(optimizer)
                 scaler.update()
-
+                
+                #this also for Warmup ONLY
                 #####################
                 if scale_before <= scaler.get_scale():
                     scheduler.step()

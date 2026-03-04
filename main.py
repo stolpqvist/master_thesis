@@ -9,6 +9,7 @@ from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
 from train.train import ModelTrain
 import numpy as np
+from scipy import stats
 
 
 
@@ -115,7 +116,13 @@ def main():
         
     if args.param_hunt:
 
-        ##NEEDS FINISHING
+        lrs = stats.loguniform(3e-5, 1e-5).rvs(10)
+        dropouts = stats.uniform(0.1, 0.4).rvs(10)
+
+        hyper_parameters = {
+            "lrs":      lrs,
+            "dropouts": dropouts,
+        }
 
         file = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
         df = pd.read_csv(file, usecols=[
@@ -133,46 +140,56 @@ def main():
 
         best_f1_from_all_folds = 0
         best_model_from_all_folds = None #because we will test all parameters and have the best model for EACH parameter
-    
-        #to get the best model per fold -> we need to compare all models from 10 epochs
-
-        #train/ val indices - Training loop 9/1 - Repeat (K=10)
-        for train_ids, val_ids in sfold:
-
-            train_fold=df.iloc[train_ids]
-            val_fold=df.iloc[val_ids]
-
-            
-            trainer = ModelTrain(
-                lr=args.lr,
-                n_epochs=args.e,
-                batch_size = args.batch_size,
-                dropout= args.dr
-                )
-
-            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
-
-            #Tracking the best model from 10 folds:
-            if f1 > best_f1_from_all_folds:
-                best_f1_from_all_folds = f1
-                best_model_from_all_folds = model
-                best_acc = acc
-                best_prec = prec
-                best_rec = rec
-                epoch = epoch
-    
-            
-            del trainer
-
-
-        #Saving the best model from all 10 folds per parameter 
-        torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
-
-
-        #Save results into the file
-        with open('Results.txt', 'a') as r_file:
-            r_file.write(f"Model, Dropout: {args.dr}, LR: {args.lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec}")
         
+
+        for lr in hyper_parameters["lrs"]:
+            for dropout in hyper_parameters["dropouts"]:
+                try:
+                    #to get the best model per fold -> we need to compare all models from 10 epochs
+
+                    #train/ val indices - Training loop 9/1 - Repeat (K=10)
+                    for train_ids, val_ids in sfold:
+
+                        train_fold=df.iloc[train_ids]
+                        val_fold=df.iloc[val_ids]
+
+                        
+                        trainer = ModelTrain(
+                            lr=lr,
+                            n_epochs=args.e,
+                            batch_size = args.batch_size,
+                            dropout= dropout
+                            )
+
+                        model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+
+                        #Tracking the best model from 10 folds:
+                        if f1 > best_f1_from_all_folds:
+                            best_f1_from_all_folds = f1
+                            best_model_from_all_folds = model
+                            best_acc = acc
+                            best_prec = prec
+                            best_rec = rec
+                            epoch = epoch
+                
+                        
+                        del trainer
+
+
+                    #Saving the best model from all 10 folds per parameter 
+                    torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
+
+
+                    #Save results into the file
+                    with open('Results.txt', 'a') as r_file:
+                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
+
+                except Exception as e:
+                    with open('Results.txt', 'a') as r_file:
+                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
+
+
+
 
 
 
