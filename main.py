@@ -10,7 +10,7 @@ from model.roberta import CustomXLMRoberta
 from train.train import ModelTrain
 import numpy as np
 from scipy import stats
-
+import copy
 
 
 
@@ -23,7 +23,7 @@ def main():
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=10) #epochs
-    parser.add_argument('--batch_size', '-b', type=int, default=5)
+    parser.add_argument('--batch_size', '-b', type=int, default=3)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
@@ -96,7 +96,7 @@ def main():
             #Tracking the best model from 10 folds:
             if f1 > best_f1_from_all_folds:
                 best_f1_from_all_folds = f1
-                best_model_from_all_folds = model
+                best_model_from_all_folds = best_model_state = copy.deepcopy(model.state_dict())
                 best_acc = acc
                 best_prec = prec
                 best_rec = rec
@@ -116,7 +116,7 @@ def main():
         
     if args.param_hunt:
 
-        lrs = stats.loguniform(3e-5, 1e-5).rvs(10)
+        lrs = stats.loguniform(1e-6, 3e-5).rvs(10)
         dropouts = stats.uniform(0.1, 0.4).rvs(10)
 
         hyper_parameters = {
@@ -166,7 +166,7 @@ def main():
                         #Tracking the best model from 10 folds:
                         if f1 > best_f1_from_all_folds:
                             best_f1_from_all_folds = f1
-                            best_model_from_all_folds = model
+                            best_model_from_all_folds = copy.deepcopy(model.state_dict())
                             best_acc = acc
                             best_prec = prec
                             best_rec = rec

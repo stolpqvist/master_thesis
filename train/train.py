@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 from transformers import get_cosine_schedule_with_warmup
-
+import copy
 
 class ModelTrain:
     def __init__(self, lr, n_epochs, batch_size, dropout):
@@ -45,7 +45,7 @@ class ModelTrain:
             train_fold,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
+            num_workers=3,
             pin_memory=False
         )
 
@@ -79,20 +79,18 @@ class ModelTrain:
         
         #STarting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
         #Here -> saving the best model per epoch
-         
+        best_val_f1 = 0
+        best_model = None
+
+        best_acc = 0
+        best_rec = 0
+        best_prec = 0
+
 
         for epoch in range(self.epochs):
-
             total_losses = 0
             all_preds = []
             all_labels = []
-            best_val_f1 = 0
-            best_model = None
-
-            best_acc = 0
-            best_rec = 0
-            best_prec = 0
-
                         
             for fields, b_labels in train_dataloader:
 
@@ -153,7 +151,7 @@ class ModelTrain:
             #early stopping for 1 fold
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
-                best_model = model
+                best_model = copy.deepcopy(model.state_dict())
                 epoch = epoch
                 best_acc = val_acc
                 best_prec = val_prec
