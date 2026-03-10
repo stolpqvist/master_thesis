@@ -11,6 +11,8 @@ from train.train import ModelTrain
 import numpy as np
 from scipy import stats
 import copy
+from utils.path_manager import PathManager
+from create_datasets.split_dataset import GroupSplit
 
 
 
@@ -30,35 +32,70 @@ def main():
     args = parser.parse_args()
 
     if args.create_datasets:
-        file = f"../datasets/{args.bg}/{args.bg}_dataset.csv"
-        df = pd.read_csv(file)
 
-        label_cl = 'TilldeladBeredningsgruppKortNamn'
+        #NEW FROM HERE
+        pm = PathManager("./")
 
-        df_trainval, df_test = train_test_split(
-            df,
-            test_size=args.test_size,
-            random_state=42,
-            stratify=df[label_cl]
-        )
+        #create datset dir
+        pm.setup()
 
-        df_trainval = df_trainval.reset_index(drop=True)
-        df_test     = df_test.reset_index(drop=True)
 
-        print(f"Dataset sizes: train+val: {len(df_trainval)},  test: {len(df_test)}")
+        #create group specific dirs in dataset ad save the group specific file
 
+        gs = GroupSplit(pm)
+
+        #READING the file that has already been saved
+
+       #df = pd.read_csv(pm.get_dataset_csv(args.bg)) 
+       
+        #UNTIL HERE
+
+        for bg in gs.groups: #iterate over group names
+            df = pd.read_csv(pm.get_dataset_csv(bg))
+
+
+        #file = f"../datasets/{args.bg}/{args.bg}_dataset.csv"
+        #df = pd.read_csv(file)
+
+            label_cl = 'TilldeladBeredningsgruppKortNamn'
+
+            df_trainval, df_test = train_test_split(
+                df,
+                test_size=args.test_size,
+                random_state=42,
+                stratify=df[label_cl]
+            )
+
+            df_trainval = df_trainval.reset_index(drop=True)
+            df_test     = df_test.reset_index(drop=True)
+
+            print(f" {bg} Dataset sizes: train+val: {len(df_trainval)},  test: {len(df_test)}")
+
+            #INSTEAD OF OLD HERE:
+            #SAVE THE NEW FILES "".to_csv"
+
+            df_trainval.to_csv(pm.get_trainval_csv(bg), index=False)
+            df_test.to_csv(pm.get_test_csv(bg), index=False)
+            #FINISH NEW
+        
         #saving datasets Train/Test
-        trainval = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
-        df_trainval.to_csv(trainval, index=False)
+        #trainval = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
+        #df_trainval.to_csv(trainval, index=False)
 
-        test = f"../datasets/{args.bg}/{args.bg}_test.csv"
-        df_test.to_csv(test, index=False)
+        #test = f"../datasets/{args.bg}/{args.bg}_test.csv"
+        #df_test.to_csv(test, index=False)
 
         print("Datasets created.")
 
 
     if args.tr:
-        file = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
+        
+        file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
+
+        #df = pd.read_csv(pm.get_trainval_csv(args.bg)...)
+        #for test:
+        #df = pd.read_csv(pm.get_test_csv(args.bg)...)
+
         df = pd.read_csv(file, usecols=[
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
@@ -124,7 +161,7 @@ def main():
             "dropouts": dropouts,
         }
 
-        file = f"../datasets/{args.bg}/{args.bg}_trainval.csv"
+        file = f"/datasets/{args.bg}/{args.bg}_trainval.csv"
         df = pd.read_csv(file, usecols=[
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
