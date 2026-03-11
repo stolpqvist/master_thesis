@@ -13,6 +13,7 @@ class PathManager:
          #convert to a Path object and figuring where it is kinda
 
         self.datasets_dir = self.root / "datasets"
+        self.tokenizer_dir = self.root / "preprocessing" / "tokenizers" 
     
     def setup(self):
         """
@@ -45,9 +46,18 @@ class PathManager:
         test cav saved
         """
         return self.datasets_dir / group_name / f"{group_name}_test.csv"
+        
+    def setup_tok(self):
+        """
+        create a dir for tokenizers
+        """
+        self.tokenizer_dir.mkdir(parents=True, exist_ok=True)
     
-    
-    
+    def get_tok(self, model_name):
+        """
+        check if tok model is avaialable
+        """
+        return self.tokenizer_dir / {model_name}.model
 
 #pm = PathManager()
 #path = pm.get_group_csv("NT")  
