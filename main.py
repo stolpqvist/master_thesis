@@ -277,8 +277,8 @@ def main():
 
     if args.param_hunt_rnn:
 
-        lrs = stats.loguniform(1e-6, 3e-5).rvs(10)
-        dropouts = stats.uniform(0.1, 0.4).rvs(10)
+        lrs = stats.loguniform(1e-4, 1e-2).rvs(10)
+        dropouts = stats.uniform(0.2, 0.5).rvs(10)
 
         hyper_parameters = {
             "lrs":      lrs,
@@ -323,10 +323,10 @@ def main():
 
 
                         trainer = NNTrain(
-                            lr=args.lr,
+                            lr=lr,
                             epochs=args.e,
                             batch_size = args.batch_size,
-                            dropout= args.dr,
+                            dropout= dropout,
                             hidden_size=512
                             )
                         
@@ -348,6 +348,8 @@ def main():
                         r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
 
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
                     with open('Results.txt', 'a') as r_file:
                         r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
 

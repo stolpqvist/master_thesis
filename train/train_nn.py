@@ -58,7 +58,7 @@ class NNTrain:
 
         model = RNN(input_size=spt.model.get_piece_size(), 
                     hidden_size=self.hidden_size, 
-                    num_classes=num_classes).to(self.device) 
+                    num_classes=num_classes, dropout=self.dropout).to(self.device) 
 
         optimmizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=0.1)
 
@@ -114,24 +114,25 @@ class NNTrain:
                     F1-Score: {f1}" 
                     )    
         
-        val_acc, val_prec, val_rec, val_f1 = self.evaluate(val_dataloader, model)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(val_dataloader, model)
 
-        print(f"Validation results: \
-                Val Accuracy: {val_acc}, \
-                Val Precision: {val_prec}, \
-                Val Recall: {val_rec}, \
-                Val F1-Score: {val_f1}" 
-                )
+            print(f"Validation results: \
+                    Val Accuracy: {val_acc}, \
+                    Val Precision: {val_prec}, \
+                    Val Recall: {val_rec}, \
+                    Val F1-Score: {val_f1}" 
+                    )
         
         #early stopping for 1 fold
-        if val_f1 > best_val_f1:
-            best_val_f1 = val_f1
-            epoch = epoch
-            best_acc = val_acc
-            best_prec = val_prec
-            best_rec = val_rec
-        else:
-            return best_val_f1, best_acc, best_prec, best_rec, epoch
+            if val_f1 > best_val_f1:
+                best_val_f1 = val_f1
+                epoch = epoch
+                best_acc = val_acc
+                best_prec = val_prec
+                best_rec = val_rec
+            else:
+                print("We are returning")
+                return best_val_f1, best_acc, best_prec, best_rec, epoch
                 
 
     def evaluate(self, v_loader, model):
