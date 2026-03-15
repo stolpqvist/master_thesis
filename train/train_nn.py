@@ -62,7 +62,6 @@ class NNTrain:
 
         optimmizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=0.1)
 
-        model.train()
 
         #Starting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
         #Here -> saving the best model per epoch
@@ -74,6 +73,7 @@ class NNTrain:
         best_prec = 0
 
         for epoch in tqdm(range(self.n_epochs)):
+            model.train()
 
             print("Starting training")
 
