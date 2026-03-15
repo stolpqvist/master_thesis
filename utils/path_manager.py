@@ -57,7 +57,9 @@ class PathManager:
         """
         check if tok model is avaialable
         """
-        return self.tokenizer_dir / {model_name}.model
+        path = self.tokenizer_dir / f"{model_name}.model"
+
+        return path.exists()
 
 #pm = PathManager()
 #path = pm.get_group_csv("NT")  

@@ -25,7 +25,7 @@ class ModelTrain:
 
 
 
-    def training_loop(self, data, val_data, label_cl):
+    def training_loop(self, data, val_data):
         #TODO Implement random parameter generation ✅
         #TODO Implement writing to file ✅
         #TODO Implement constructor that constructs folders as needed
@@ -130,7 +130,7 @@ class ModelTrain:
                 all_preds.extend(preds.cpu().tolist())
                 all_labels.extend(b_labels.cpu().tolist())
             
-            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data, label_cl)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data)
             #accuracy per epoch
             accuracy = accuracy_score(all_labels, all_preds)
             prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
@@ -162,7 +162,7 @@ class ModelTrain:
         
 
 
-    def evaluate(self, model, val_data, label_cl):
+    def evaluate(self, model, val_data):
         model.eval()
         total_losses = 0
         all_preds = []

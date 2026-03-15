@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from sklearn.model_selection import  train_test_split
 from data_handling.strat_fold import StratifiedFold
+from utils.path_manager import PathManager as pm
 
 from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
@@ -13,6 +14,8 @@ from scipy import stats
 import copy
 from utils.path_manager import PathManager
 from create_datasets.split_dataset import GroupSplit
+from train.train_nn import NNTrain
+from preprocessing.pre_nn import SPTokenizer
 
 
 
@@ -29,6 +32,8 @@ def main():
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
+    parser.add_argument('--train_rnn', action='store_true', default=False)
+    parser.add_argument('--param_hunt_rnn', action='store_true', default=False )
     args = parser.parse_args()
 
     if args.create_datasets:
@@ -128,7 +133,7 @@ def main():
                 dropout= args.dr
                 )
 
-            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
 
             #Tracking the best model from 10 folds:
             if f1 > best_f1_from_all_folds:
@@ -198,7 +203,7 @@ def main():
                             dropout= dropout
                             )
 
-                        model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+                        model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
 
                         #Tracking the best model from 10 folds:
                         if f1 > best_f1_from_all_folds:
@@ -224,6 +229,132 @@ def main():
                 except Exception as e:
                     with open('Results.txt', 'a') as r_file:
                         r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
+
+    if args.train_rnn:
+
+
+        file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
+
+
+
+        df = pd.read_csv(file, usecols=[
+            "TilldeladBeredningsgruppKortNamn",
+            "AnsökanTitel",
+            "AnsökanTitelEng",
+            "Beskrivning",
+            "Nyckelord"
+        ])
+
+
+        label = 'TilldeladBeredningsgruppKortNamn'
+
+        sp = SPTokenizer(df)
+
+        
+        sfold = StratifiedFold(k=10)
+
+        sfold.stratifier(df, label)
+
+
+        for train_ids, val_ids in sfold:
+
+            train_fold=df.iloc[train_ids]
+            val_fold=df.iloc[val_ids]
+
+
+            trainer = NNTrain(
+                lr=args.lr,
+                epochs=args.e,
+                batch_size = args.batch_size,
+                dropout= args.dr,
+                hidden_size=512
+                )
+            
+            #HIDDEN SIZE CHANGE LATER
+
+            trainer.training_loop(train_fold, val_fold)
+    
+
+    if args.param_hunt_rnn:
+
+        lrs = stats.loguniform(1e-6, 3e-5).rvs(10)
+        dropouts = stats.uniform(0.1, 0.4).rvs(10)
+
+        hyper_parameters = {
+            "lrs":      lrs,
+            "dropouts": dropouts,
+        }
+
+        file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
+
+        df = pd.read_csv(file, usecols=[
+            "TilldeladBeredningsgruppKortNamn",
+            "AnsökanTitel",
+            "AnsökanTitelEng",
+            "Beskrivning",
+            "Nyckelord"
+        ])
+
+
+        label = 'TilldeladBeredningsgruppKortNamn'
+
+        sp = SPTokenizer(df)
+
+        
+        sfold = StratifiedFold(k=10)
+
+        sfold.stratifier(df, label)
+
+
+        best_f1_from_all_folds = 0
+        
+        for lr in hyper_parameters["lrs"]:
+            for dropout in hyper_parameters['dropouts']:
+
+                try:
+                    #to get the best model per fold -> we need to compare all models from 10 epochs
+
+                    #train/ val indices - Training loop 9/1 - Repeat (K=10)
+
+                    for train_ids, val_ids in sfold:
+
+                        train_fold=df.iloc[train_ids]
+                        val_fold=df.iloc[val_ids]
+
+
+                        trainer = NNTrain(
+                            lr=args.lr,
+                            epochs=args.e,
+                            batch_size = args.batch_size,
+                            dropout= args.dr,
+                            hidden_size=512
+                            )
+                        
+                        #HIDDEN SIZE CHANGE LATER
+
+                        f1, acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
+
+                        #Tracking the best model from 10 folds:
+                        if f1 > best_f1_from_all_folds:
+                            best_f1_from_all_folds = f1
+                            best_acc = acc
+                            best_prec = prec
+                            best_rec = rec
+                            epoch = epoch
+                        
+                        del trainer
+
+                    with open('Results.txt', 'a') as r_file:
+                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
+
+                except Exception as e:
+                    with open('Results.txt', 'a') as r_file:
+                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
+
+
+
+
+
 
 
 
