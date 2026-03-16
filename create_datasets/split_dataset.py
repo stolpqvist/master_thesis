@@ -12,7 +12,7 @@ Split the data into ONLY NECESSARY COLUMNS per GROUP (NT; MH; HS; UV)
 class GroupSplit:
     def __init__(self, pm: PathManager):
         self.pm = pm
-        self.filename = "../vr_data/DATA_copy.csv"
+        self.filename = "../datasets/data_uppdaterad.csv"
         self.df = self.open_file()
         self.groups = self.filter_columns(self.df)
         self.dataset_save(self.groups, self.df)
