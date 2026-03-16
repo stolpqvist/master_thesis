@@ -61,7 +61,7 @@ class NNTrain:
 
         model = ClassificationCNN(
                     vocab_size=spt.model.get_piece_size(), 
-                    hidden_size=self.hidden_size, 
+                    hidden_dim=self.hidden_size, 
                     num_classes=num_classes, 
                     dropout=self.dropout).to(self.device) 
 
@@ -90,7 +90,7 @@ class NNTrain:
                 tokens = tokens.to(self.device)
                 labels = labels.to(self.device)
 
-                optimmizer.zero_grad()
+                optimizer.zero_grad()
 
                 logits = model(tokens)
                 loss = self.criterion(logits, labels)

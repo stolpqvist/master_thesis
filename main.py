@@ -323,7 +323,7 @@ def main():
             fold_f1s = []
 
             for train_ids, val_ids in sfold:
-
+                print(f"These are the ones in common {set(train_ids) & set(val_ids)}")
                 train_fold=df.iloc[train_ids]
                 val_fold=df.iloc[val_ids]
 
