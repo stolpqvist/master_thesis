@@ -27,7 +27,7 @@ def main():
     parser.add_argument('-md', type=str, default= 'roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-e', type=int, default=5) #epochs
+    parser.add_argument('-e', type=int, default=2) #epochs
     parser.add_argument('--batch_size', '-b', type=int, default=3)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
@@ -309,7 +309,7 @@ def main():
         sp = SPTokenizer(df)
 
         
-        sfold = StratifiedFold(k=5)
+        sfold = StratifiedFold(k=2)
 
         sfold.stratifier(df, label)
 
@@ -352,7 +352,7 @@ def main():
                 )
 
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials = 25, callbacks=[save_trial]) #25 combinations
+        study.optimize(objective, n_trials = 2, callbacks=[save_trial]) #25 combinations
 
 
         #Here just write the best param
