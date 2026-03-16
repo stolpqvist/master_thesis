@@ -27,7 +27,7 @@ def main():
     parser.add_argument('-md', type=str, default= 'roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-e', type=int, default=10) #epochs
+    parser.add_argument('-e', type=int, default=5) #epochs
     parser.add_argument('--batch_size', '-b', type=int, default=3)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
@@ -282,13 +282,15 @@ def main():
 
     if args.param_hunt_rnn:
 
-        lrs = stats.loguniform(1e-4, 1e-2).rvs(10)
-        dropouts = stats.uniform(0.2, 0.5).rvs(10)
+        import optuna
 
-        hyper_parameters = {
-            "lrs":      lrs,
-            "dropouts": dropouts,
-        }
+        #lrs = stats.loguniform(1e-4, 1e-2).rvs(10)
+        #dropouts = stats.uniform(0.2, 0.5).rvs(10)
+
+        #hyper_parameters = {
+        #    "lrs":      lrs,
+        #    "dropouts": dropouts,
+        #}
 
         file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
 
@@ -307,57 +309,108 @@ def main():
         sp = SPTokenizer(df)
 
         
-        sfold = StratifiedFold(k=10)
+        sfold = StratifiedFold(k=5)
 
         sfold.stratifier(df, label)
 
+        #NEW
 
-        best_f1_from_all_folds = 0
+        def objective(trial):
+
+            lr = trial.suggest_float("lr", 1e-4, 1e-2, log = True)
+            dropout = trial.suggest_float("dropout", 0.2, 0.7)
+
+            fold_f1s = []
+
+            for train_ids, val_ids in sfold:
+
+                train_fold=df.iloc[train_ids]
+                val_fold=df.iloc[val_ids]
+
+
+                trainer = NNTrain(
+                    lr=lr,
+                    epochs=args.e,
+                    batch_size = args.batch_size,
+                    dropout= dropout,
+                    hidden_size=512
+                    )
+                
+                f1, acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
+                fold_f1s.append(f1)
+
+                del trainer
+            
+            return sum(fold_f1s) / len(fold_f1s) #mean across all folds
         
-        for lr in hyper_parameters["lrs"]:
-            for dropout in hyper_parameters['dropouts']:
+        def save_trial(study, trial):
+        
+            with open('Results.txt', 'a') as r_file:
+                r_file.write(
+                    f"Trial {trial.number} | F1: {trial.value:.4f} |"
+                    f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
+                )
 
-                try:
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials = 25, callbacks=[save_trial]) #25 combinations
+
+
+        #Here just write the best param
+        with open('Results.txt', 'a') as r_file:
+            r_file.write(
+                f"\n Best LR: {study.best_params['lr']:.6f} |"
+                f"Dropout: {study.best_params['dropout']:.4f}| "
+                f"F1: {study.best_value:.4f}\n"
+            )             
+
+        #NEW OVER
+
+        #best_f1_from_all_folds = 0
+        
+        #for lr in hyper_parameters["lrs"]:
+        #    for dropout in hyper_parameters['dropouts']:
+
+        #        try:
                     #to get the best model per fold -> we need to compare all models from 10 epochs
 
                     #train/ val indices - Training loop 9/1 - Repeat (K=10)
 
-                    for train_ids, val_ids in sfold:
+        #            for train_ids, val_ids in sfold:
 
-                        train_fold=df.iloc[train_ids]
-                        val_fold=df.iloc[val_ids]
+        #                train_fold=df.iloc[train_ids]
+        #                val_fold=df.iloc[val_ids]
 
 
-                        trainer = NNTrain(
-                            lr=lr,
-                            epochs=args.e,
-                            batch_size = args.batch_size,
-                            dropout= dropout,
-                            hidden_size=512
-                            )
+        #                trainer = NNTrain(
+        #                    lr=lr,
+        #                    epochs=args.e,
+        #                    batch_size = args.batch_size,
+        #                    dropout= dropout,
+        #                    hidden_size=512
+        #                    )
                         
                         #HIDDEN SIZE CHANGE LATER
 
-                        f1, acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
+        #                f1, acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
 
                         #Tracking the best model from 10 folds:
-                        if f1 > best_f1_from_all_folds:
-                            best_f1_from_all_folds = f1
-                            best_acc = acc
-                            best_prec = prec
-                            best_rec = rec
-                            epoch = epoch
+        #                if f1 > best_f1_from_all_folds:
+        #                    best_f1_from_all_folds = f1
+        #                    best_acc = acc
+        #                    best_prec = prec
+        #                    best_rec = rec
+        #                    epoch = epoch
                         
-                        del trainer
+        #                del trainer
 
-                    with open('Results.txt', 'a') as r_file:
-                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
+        #            with open('Results.txt', 'a') as r_file:
+        #                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
 
-                except Exception as e:
-                    import traceback
-                    traceback.print_exc()
-                    with open('Results.txt', 'a') as r_file:
-                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
+        #        except Exception as e:
+        #            import traceback
+        #            traceback.print_exc()
+        #            with open('Results.txt', 'a') as r_file:
+        #                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
 
 
 

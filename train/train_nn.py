@@ -25,6 +25,7 @@ class NNTrain:
             self.device = torch.device("mps")
         else:
             self.device = torch.device("cpu")
+        
 
 
 
