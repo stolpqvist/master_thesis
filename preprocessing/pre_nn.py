@@ -76,8 +76,7 @@ class SPTokenizer:
         2. train the tokenizer (prepare vocab)
         """
 
-        text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
-
+        text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
         all_text = pd.concat([self.df[col].dropna() for col in text_columns], ignore_index=True)
 
         self.pm.setup_tok()
@@ -121,7 +120,7 @@ class SPTokenizer:
         #pieces = self.model.encode(text, out_type=str)
         #print(pieces)
 
-        text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
+        text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
         tokens = []
         labels = []
 

@@ -105,7 +105,8 @@ def main():
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
             "AnsökanTitelEng",
-            "Beskrivning",
+            "Sammanfattning",
+            "Populärbeskrivning",
             "Nyckelord"
         ])
 
@@ -171,9 +172,12 @@ def main():
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
             "AnsökanTitelEng",
-            "Beskrivning",
+            "Sammanfattning",
+            "Populärbeskrivning",
             "Nyckelord"
         ])
+
+
 
         label_cl = 'TilldeladBeredningsgruppKortNamn'
         
@@ -241,7 +245,8 @@ def main():
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
             "AnsökanTitelEng",
-            "Beskrivning",
+            "Sammanfattning",
+            "Populärbeskrivning",
             "Nyckelord"
         ])
 
@@ -291,7 +296,8 @@ def main():
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
             "AnsökanTitelEng",
-            "Beskrivning",
+            "Sammanfattning",
+            "Populärbeskrivning",
             "Nyckelord"
         ])
 

@@ -15,6 +15,8 @@ class NNTrain:
         self.batch_size = batch_size
         self.dropout = dropout
         self.hidden_size = hidden_size
+        self.patience = 3
+        self.patience_count = 0
         self.criterion = nn.CrossEntropyLoss()
 
         if torch.cuda.is_available():
@@ -122,7 +124,8 @@ class NNTrain:
                     Val Recall: {val_rec}, \
                     Val F1-Score: {val_f1}" 
                     )
-        
+
+
         #early stopping for 1 fold
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
@@ -131,9 +134,13 @@ class NNTrain:
                 best_prec = val_prec
                 best_rec = val_rec
             else:
-                print("We are returning")
-                return best_val_f1, best_acc, best_prec, best_rec, epoch
-                
+                if self.patience_count < self.patience:
+                    self.patience_count += 1
+                    #print("We are returning")
+                else:
+                    return best_val_f1, best_acc, best_prec, best_rec, epoch
+
+        return best_val_f1, best_acc, best_prec, best_rec, epoch    
 
     def evaluate(self, v_loader, model):
 

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes, dropout):
         super(RNN, self).__init__()
@@ -12,6 +13,33 @@ class RNN(nn.Module):
         self.rnn = nn.LSTM(hidden_size, hidden_size, batch_first=True)
         self.attn = AttentionConcat(hidden_size) #importing this 
         self.classifier = nn.Linear(hidden_size, num_classes)
+
+        self.init_weights()
+    
+    def init_weights(self):
+
+        #Embedding
+        nn.init.uniform_(self.embedding.weight, -0.1, 0.1)
+
+        #RNN parameters
+        for name, param in self.rnn.named_parameters():
+            if 'weight_ih' in name:
+                nn.init.xavier_uniform_(param) #input-hidden weights
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param) #hidden-hidden weights
+            elif 'bias' in name:
+                nn.init.zeros_(param)
+        
+        #attention linear layer
+        nn.init.xavier_uniform_(self.attn.attn.weight)
+        nn.init.zeros_(self.attn.attn.bias)
+
+        #attention scoring vector
+        nn.init.uniform_(self.attn.vector, -0.1, 0.1)
+
+        #classifier
+        nn.init.xavier_uniform_(self.classifier.weight)
+        nn.init.zeros_(self.classifier.bias)
         
 
     def forward(self, input_tensor):
