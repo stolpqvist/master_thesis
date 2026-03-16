@@ -12,14 +12,14 @@ Split the data into ONLY NECESSARY COLUMNS per GROUP (NT; MH; HS; UV)
 class GroupSplit:
     def __init__(self, pm: PathManager):
         self.pm = pm
-        self.filename = "../vr_data/DATA_copy.csv"
+        self.filename = "../vr_data/data_uppdaterad.csv"
         self.df = self.open_file()
         self.groups = self.filter_columns(self.df)
         self.dataset_save(self.groups, self.df)
 
 
 
-    def open_file(self):
+    def open_file(self): 
         df = pd.read_csv(self.filename, delimiter=',')
         return df
     
@@ -29,7 +29,7 @@ class GroupSplit:
         Only the new classifications for each group in defaultdict
         """
         
-        df = df[["AnsökanID",'DiarieförtÅr', "ÖnskadeBeredningsgrupperKortNamn",'TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "BeskrivningEng", "InternaForskningsämnenSCBKoder", "InternaForskningsämnenSCB", "Nyckelord"]]
+        df = df[["AnsökanID",'DiarieförtÅr', "ÖnskadeBeredningsgrupperKortNamn",'TilldeladBeredningsgruppKortNamn', "AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"]]
 
         #all_groups = defaultdict(lambda:defaultdict(int))
         div_groups = defaultdict(set)

@@ -74,3 +74,4 @@ Model, Dropout: 0.2610364597565564, LR: 0.00018039304134396953, ERROR Sizes of t
 Model, Dropout: 0.5920765259076616, LR: 0.00018039304134396953, ERROR Sizes of tensors must match except in dimension 2. Expected size 3 but got size 1 for tensor number 1 in the list. 
 Model, Dropout: 0.20559962174402602, LR: 0.0005519008031181351, ERROR Expected target size [3, 19], got [3] 
 Model, Dropout: 0.3224784436932756, LR: 0.0005519008031181351, ERROR Expected target size [3, 19], got [3] 
+Model, Dropout: 0.34072804555495206, LR: 0.002166048550571708, ERROR cannot unpack non-iterable NoneType object 
