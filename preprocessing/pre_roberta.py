@@ -24,11 +24,13 @@ import numpy as np
 import torch
 
 COLUMN_BUDGETS = {
-    "AnsökanTitel":         64,
-    "AnsökanTitelEng":      64,
-    "Beskrivning":          319,
-    "Nyckelord":            45,
+    "AnsökanTitel":         50,
+    "AnsökanTitelEng":      50,
+    "Sammanfattning":       190,
+    "Populärbeskrivning":   190,
+    "Nyckelord":            32,
 }
+
 
 
 
@@ -52,7 +54,7 @@ class DataProcessor(Dataset):
         self.label2id = {} #defaultdict(lambda: len(self.label2id))
         self.id2label = {}
         self.tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
-        self.text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
+        self.text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
         self.label_column = 'TilldeladBeredningsgruppKortNamn'
 
 

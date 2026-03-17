@@ -9,13 +9,14 @@ from transformers import get_cosine_schedule_with_warmup
 import copy
 
 class ModelTrain:
-    def __init__(self, lr, n_epochs, batch_size, dropout):
+    def __init__(self, lr, n_epochs, batch_size, dropout, weight_decay):
 
         self.lr = lr
         self.epochs = n_epochs
         self.batch_size = batch_size
         self.criterion = nn.CrossEntropyLoss()
         self.dropout = dropout
+        self.weight_decay = weight_decay
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         elif torch.backends.mps.is_available():
@@ -58,7 +59,7 @@ class ModelTrain:
                     hidden_dropout=self.dropout
                 ).to(self.device)   
         
-        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=0.01) #weight_decay can be removed
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scaler = torch.amp.GradScaler(self.device)
 
 

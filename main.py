@@ -24,7 +24,7 @@ def main():
     parser.add_argument('-md', type=str, default= 'roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-e', type=int, default=10) #epochs
+    parser.add_argument('-e', type=int, default=5) #epochs
     parser.add_argument('--batch_size', '-b', type=int, default=3)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
@@ -153,77 +153,131 @@ def main():
         
     if args.param_hunt:
 
-        lrs = stats.loguniform(1e-6, 3e-5).rvs(10)
-        dropouts = stats.uniform(0.1, 0.4).rvs(10)
+        import optuna
 
-        hyper_parameters = {
-            "lrs":      lrs,
-            "dropouts": dropouts,
-        }
+        #lrs = stats.loguniform(1e-6, 3e-5).rvs(10)
+        #dropouts = stats.uniform(0.1, 0.4).rvs(10)
 
-        file = f"/datasets/{args.bg}/{args.bg}_trainval.csv"
+        #hyper_parameters = {
+        #    "lrs":      lrs,
+        #    "dropouts": dropouts,
+        #}
+
+        file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
         df = pd.read_csv(file, usecols=[
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
             "AnsökanTitelEng",
-            "Beskrivning",
+            "Sammanfattning",
+            "Populärbeskrivning",
             "Nyckelord"
         ])
 
         label_cl = 'TilldeladBeredningsgruppKortNamn'
         
-        sfold = StratifiedFold(k=10)
+        sfold = StratifiedFold(k=5)
         sfold.stratifier(df, label_cl)
 
-        best_f1_from_all_folds = 0
-        best_model_from_all_folds = None #because we will test all parameters and have the best model for EACH parameter
-        
 
-        for lr in hyper_parameters["lrs"]:
-            for dropout in hyper_parameters["dropouts"]:
-                try:
-                    #to get the best model per fold -> we need to compare all models from 10 epochs
+        def objective(trial):
 
-                    #train/ val indices - Training loop 9/1 - Repeat (K=10)
-                    for train_ids, val_ids in sfold:
+            lr = trial.suggest_float("lr", 1e-6, 3e-5, log=True)
+            dropout = trial.suggest_float("dropout", 0.1, 0.4)
+            weight_decay = trial.suggest_float("weight_decay", 1e-4, 1e-1, log=True)
 
-                        train_fold=df.iloc[train_ids]
-                        val_fold=df.iloc[val_ids]
+            fold_f1s = []
 
-                        
-                        trainer = ModelTrain(
+            for train_ids, val_ids in sfold:
+
+                train_fold=df.iloc[train_ids]
+                val_fold=df.iloc[val_ids]
+
+
+                trainer = ModelTrain(
                             lr=lr,
                             n_epochs=args.e,
                             batch_size = args.batch_size,
-                            dropout= dropout
+                            dropout= dropout,
+                            weight_decay=weight_decay
                             )
+                
+                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+                fold_f1s.append(f1) #validation f1s
 
-                        model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+                del trainer
+            
+            return sum(fold_f1s) / len(fold_f1s) #mean across all folds
+        
+        def save_trial(study, trial):
+        
+            with open(f'Results_roberta_{args.bg}.txt', 'a') as r_file:
+                r_file.write(
+                    f"Trial {trial.number} | F1: {trial.value:.4f} |"
+                    f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
+                )
+
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials = 25, callbacks=[save_trial]) #25 combinations
+
+
+        #Here just write the best param
+        with open(f'Results_roberta_{args.bg}.txt', 'a') as r_file:
+            r_file.write(
+                f"\n Best LR: {study.best_params['lr']:.6f} |"
+                f"Dropout: {study.best_params['dropout']:.4f}| "
+                f"F1: {study.best_value:.4f}\n"
+            )             
+
+
+        #best_f1_from_all_folds = 0
+        #best_model_from_all_folds = None #because we will test all parameters and have the best model for EACH parameter
+        
+
+        #for lr in hyper_parameters["lrs"]:
+        #    for dropout in hyper_parameters["dropouts"]:
+        #        try:
+                    #to get the best model per fold -> we need to compare all models from 10 epochs
+
+                    #train/ val indices - Training loop 9/1 - Repeat (K=10)
+        #            for train_ids, val_ids in sfold:
+
+        #                train_fold=df.iloc[train_ids]
+        #                val_fold=df.iloc[val_ids]
+
+                        
+        #                trainer = ModelTrain(
+        #                    lr=lr,
+        #                    n_epochs=args.e,
+        #                    batch_size = args.batch_size,
+        #                    dropout= dropout
+        #                    )
+
+        #                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
 
                         #Tracking the best model from 10 folds:
-                        if f1 > best_f1_from_all_folds:
-                            best_f1_from_all_folds = f1
-                            best_model_from_all_folds = copy.deepcopy(model.state_dict())
-                            best_acc = acc
-                            best_prec = prec
-                            best_rec = rec
-                            epoch = epoch
+        #                if f1 > best_f1_from_all_folds:
+        #                    best_f1_from_all_folds = f1
+        #                    best_model_from_all_folds = copy.deepcopy(model.state_dict())
+        #                    best_acc = acc
+        #                    best_prec = prec
+        #                   best_rec = rec
+        #                    epoch = epoch
                 
                         
-                        del trainer
+        #                del trainer
 
 
                     #Saving the best model from all 10 folds per parameter 
-                    torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
+        #            torch.save(best_model_from_all_folds.state_dict(), './Best_model.pt')
 
 
                     #Save results into the file
-                    with open('Results.txt', 'a') as r_file:
-                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
+        #            with open('Results.txt', 'a') as r_file:
+        #                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
 
-                except Exception as e:
-                    with open('Results.txt', 'a') as r_file:
-                        r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
+        #        except Exception as e:
+        #            with open('Results.txt', 'a') as r_file:
+        #               r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
 
 
 
