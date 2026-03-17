@@ -16,7 +16,8 @@ class Config:
     n_epochs:   int,
     lr:         float,
     dropout:    float,
-    columns:    InitVar[list | str]
+    columns:    list,
+
 
     def __post_init__(self):
         if not isinstance(self.model, Model):
