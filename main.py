@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from sklearn.model_selection import  train_test_split
 from data_handling.strat_fold import StratifiedFold
+from config import Config, Model
 
 from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
@@ -21,15 +22,30 @@ def main():
 
     parser.add_argument('-bg', type=str, default='NT')
     parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
-    parser.add_argument('-md', type=str, default= 'roberta') #model
+    parser.add_argument('-m', type=str, default= 'roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=5) #epochs
     parser.add_argument('--batch_size', '-b', type=int, default=3)
+    parser.add_argument('-k', type=int, default=5)
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
     args = parser.parse_args()
+
+
+    config = Config(
+        model = Model(args.m),
+        k = args.k,
+        batch_size = args.batch_size,
+        n_epochs = args.e,
+        lr = args.lr,
+        dropout = args.dr,
+        columns=["col1", "col2"])
+    
+    #train(config)
+    
+
 
     if args.create_datasets:
 
