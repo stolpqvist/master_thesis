@@ -309,7 +309,7 @@ def main():
         sp = SPTokenizer(df)
 
         
-        sfold = StratifiedFold(k=5)
+        sfold = StratifiedFold(k=2)
 
         sfold.stratifier(df, label)
 
@@ -337,7 +337,7 @@ def main():
 
                 trainer = NNTrain(
                     lr=lr,
-                    epochs=args.e,
+                    epochs=2,
                     batch_size = args.batch_size,
                     dropout= dropout,
                     hidden_size=512
