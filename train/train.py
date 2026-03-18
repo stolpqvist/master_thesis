@@ -26,7 +26,7 @@ class ModelTrain:
 
 
 
-    def training_loop(self, data, val_data, label_cl):
+    def training_loop(self, data, val_data):
         #TODO Implement random parameter generation ✅
         #TODO Implement writing to file ✅
         #TODO Implement constructor that constructs folders as needed
@@ -81,7 +81,7 @@ class ModelTrain:
         #STarting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
         #Here -> saving the best model per epoch
         best_val_f1 = 0
-        best_model = None
+        #best_model = None
 
         best_acc = 0
         best_rec = 0
@@ -131,7 +131,7 @@ class ModelTrain:
                 all_preds.extend(preds.cpu().tolist())
                 all_labels.extend(b_labels.cpu().tolist())
             
-            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data, label_cl)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data)
             #accuracy per epoch
             accuracy = accuracy_score(all_labels, all_preds)
             prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
@@ -152,18 +152,18 @@ class ModelTrain:
             #early stopping for 1 fold
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
-                best_model = copy.deepcopy(model.state_dict())
+                #best_model = copy.deepcopy(model.state_dict())
                 epoch = epoch
                 best_acc = val_acc
                 best_prec = val_prec
                 best_rec = val_rec
             else:
-                return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
+                return best_val_f1, best_acc, best_prec, best_rec, epoch
             
         
 
 
-    def evaluate(self, model, val_data, label_cl):
+    def evaluate(self, model, val_data):
         model.eval()
         total_losses = 0
         all_preds = []

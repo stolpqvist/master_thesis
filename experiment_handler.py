@@ -31,32 +31,40 @@ class ExperimentOrganiser:
             NotImplementedError
 
     
-    def training_loop(self, bg, columns, label, lr, dropout, epochs, batch_size):
+    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size):
         from .data_handling.strat_fold import StratifiedFold
+        
 
-        if self.model != 'roberta':
-            from .train.train_nn import _
-        else:
-            from .train.train import ModelTrain
-            import copy
+        file = f"datasets/{bg}/{bg}_trainval.csv"
 
-            #for roberta
-            file = f"datasets/{bg}/{bg}_trainval.csv"
+        df = pd.read_csv(file, usecols=[columns])
 
-            df = pd.read_csv(file, usecols=[columns])
-
-            label_cl = label
+        label_cl = label
             
-            sfold = StratifiedFold(k=10)
-            sfold.stratifier(df, label_cl)
+        sfold = StratifiedFold(k=10)
+        sfold.stratifier(df, label_cl)
 
-            best_f1_from_all_folds = 0
-            best_model_from_all_folds = None 
+        fold_f1s = []
 
-            for train_ids, val_ids in sfold:
+        for train_ids, val_ids in sfold:
+            
+            train_fold=df.iloc[train_ids]
+            val_fold=df.iloc[val_ids]
 
-                train_fold=df.iloc[train_ids]
-                val_fold=df.iloc[val_ids]
+            if self.model != 'roberta':
+                from .train.train_nn import NNTrain
+
+                trainer = NNTrain(
+                    lr=lr,
+                    epochs=epochs,
+                    batch_size=batch_size,
+                    dropout=dropout,
+                    hidden_size=512
+                )
+
+            else:
+                from .train.train import ModelTrain
+                import copy
                 
                 trainer = ModelTrain(
                     lr=lr,
@@ -65,27 +73,14 @@ class ExperimentOrganiser:
                     dropout= dropout
                     )
 
-                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+            f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
+            
+            del trainer
 
-                #Tracking the best model from 10 folds:
-                if f1 > best_f1_from_all_folds:
-                    best_f1_from_all_folds = f1
-                    best_model_from_all_folds = best_model_state = copy.deepcopy(model.state_dict())
-                    best_acc = acc
-                    best_prec = prec
-                    best_rec = rec
-                    epoch = epoch
-        
-                
-                del trainer
+        return sum(fold_f1s) / len(fold_f1s) #mean f1
 
 
-            #Saving the best model from all folds 
-            torch.save(best_model_from_all_folds.state_dict(), './Best_model_roberta.pt')
 
-            #with open('Results_roberta.txt', 'a') as r_file:
-            #    r_file.write(f"Model, Dropout: {dr}, LR: {lr}, Epochs: {epoch}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec}")
-    
     def evaluate(self):
         raise NotImplementedError
 

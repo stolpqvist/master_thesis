@@ -162,7 +162,7 @@ def main():
                 dropout= args.dr
                 )
 
-            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+            model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
 
             #Tracking the best model from 10 folds:
             if f1 > best_f1_from_all_folds:
@@ -235,7 +235,7 @@ def main():
                             weight_decay=weight_decay
                             )
                 
-                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
                 fold_f1s.append(f1) #validation f1s
 
                 del trainer
