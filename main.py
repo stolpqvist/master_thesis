@@ -321,9 +321,16 @@ def main():
             dropout = trial.suggest_float("dropout", 0.2, 0.7)
 
             fold_f1s = []
-
+            prev_train_ids = set()
+            prev_val_ids = set()
             for train_ids, val_ids in sfold:
                 print(f"These are the ones in common {set(train_ids) & set(val_ids)}")
+                print(f"These are the previous ones in commone: \n \
+                        Previous train {set(train_ids) & prev_train_ids} \n \
+                        Previous Train with previous val: {prev_val_ids & set(train_ids)} \n \
+                        Val with previous val: {set(val_ids) & prev_val_ids} \n \
+                        Val with previous train: {set(val_ids) & prev_train_ids}"
+                      )
                 train_fold=df.iloc[train_ids]
                 val_fold=df.iloc[val_ids]
 
@@ -338,6 +345,9 @@ def main():
                 
                 f1, acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
                 fold_f1s.append(f1)
+
+                prev_train_ids = set(train_ids)
+                prev_val_ids = set(val_ids)
 
                 del trainer
             
