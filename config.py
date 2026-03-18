@@ -17,7 +17,7 @@ class Config:
     lr:         float
     dropout:    float
     columns:    list
-
+    label:      str
     def __post_init__(self):
         if not isinstance(self.model, Model):
             raise ValueError(f"Invalid model. Choose from: {[m.value for m in Model]}")
