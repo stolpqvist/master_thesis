@@ -3,3 +3,4 @@ Results.txt
 prev_work/
 memray-flamegraph-main.py.6114.html
 notes*.txt
+*.pyc
