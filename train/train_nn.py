@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.metrics import precision_recall_fscore_support ,accuracy_score
 
 class NNTrain:
-    def __init__(self, lr, epochs, batch_size, dropout, hidden_size):
+    def __init__(self, model, lr, epochs, batch_size, dropout, hidden_size):
         self.lr = lr
         self.n_epochs = epochs
         self.batch_size = batch_size
@@ -18,6 +18,12 @@ class NNTrain:
         self.patience = 3
         self.patience_count = 0
         self.criterion = nn.CrossEntropyLoss()
+        if model == 'cnn':
+            from ..model.cnn import ClassificationCNN
+            self.model_class = ClassificationCNN
+        else:
+            from ..model.rnn import RNN
+            self.model_class = RNN
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
@@ -59,7 +65,7 @@ class NNTrain:
         )
 
 
-        model = RNN(input_size=spt.model.get_piece_size(), 
+        model = self.model_class(input_size=spt.model.get_piece_size(), 
                     hidden_size=self.hidden_size, 
                     num_classes=num_classes, dropout=self.dropout).to(self.device) 
 
