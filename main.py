@@ -22,7 +22,7 @@ def main():
 
     parser.add_argument('-bg', type=str, default='NT')
     parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
-    parser.add_argument('-m', type=str, default= 'roberta') #model
+    parser.add_argument('-m', type=str, default='roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=5) #epochs
@@ -31,8 +31,21 @@ def main():
     parser.add_argument('-tr', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)       # Test size
+    parser.add_argument('-c','--columns', default=None, help='The data columns to be used for training model')
+    parser.add_argument('-l', '--label', default=None, help='The label column to be used for testing predictions')
+    parser.add_argument('-f', '--file', default=None) 
+
+
     args = parser.parse_args()
 
+    if args.file is None and args.create_datasets:
+        print('Please specify path to dataset')
+        break
+     
+    if args.c is None:
+        df = pd.read_csv(args.f).columns.values
+        df_dict = {i: v for i,v in enumerate(df)}
+        columns = input(f"{df_dict} \nKindly select numbers of columns to be used for data:")
 
     config = Config(
         model = Model(args.m),
@@ -41,7 +54,7 @@ def main():
         n_epochs = args.e,
         lr = args.lr,
         dropout = args.dr,
-        columns=["col1", "col2"])
+        columns=args.columns)
     
     #train(config)
     

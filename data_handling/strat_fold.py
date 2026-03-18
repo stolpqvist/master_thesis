@@ -37,8 +37,9 @@ class StratifiedFold:
             for class_id in range(n_classes):
                 mask = (col_val == class_id)
                 class_idx = np.where(mask)[0]
-
-                start = fold * n_samples_per_class[class_id]
+                
+                extra_before = min(fold, remainder[class_id])
+                start = fold * n_samples_per_class[class_id] + extra_before
                 end = start + n_samples_per_class[class_id]
 
                 
