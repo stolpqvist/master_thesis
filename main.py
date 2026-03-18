@@ -47,6 +47,7 @@ def main():
         df_dict = {i: v for i,v in enumerate(df)}
         columns = input(f"{df_dict} \nKindly select numbers of columns to be used for data:")
         args.columns = [df_dict[col] for column in columns]
+
     if args.label is None:
         df = pd.read_csv(args.f).columns.values
 
@@ -57,8 +58,8 @@ def main():
         n_epochs = args.e,
         lr = args.lr,
         dropout = args.dr,
-        columns=args.columns
-        label=args.l)
+        columns=args.columns,
+        label=args.label)
     
     #train(config)
     
