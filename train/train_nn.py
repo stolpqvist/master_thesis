@@ -65,9 +65,12 @@ class NNTrain:
         )
 
 
-        model = self.model_class(input_size=spt.model.get_piece_size(), 
-                    hidden_size=self.hidden_size, 
-                    num_classes=num_classes, dropout=self.dropout).to(self.device) 
+        model = self.model_class(input_size=    spt.model.get_piece_size(),
+                                 embedding_dim= embedding_dim,
+                                 hidden_size=   self.hidden_size, 
+                                 num_classes=   num_classes,
+                                 dropout=       self.dropout
+                                 ).to(self.device) 
 
         optimmizer = torch.optim.AdamW(model.parameters(), lr=self.lr, weight_decay=0.1)
 
