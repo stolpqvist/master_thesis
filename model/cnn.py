@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import sys
 class ClassificationCNN(nn.Module):
 
-    def __init__(self, vocab_size, num_classes, embedding_dim = 300, hidden_dim = 512, dropout = 0.04):
+    def __init__(self, input_size, num_classes, embedding_dim = 300, hidden_dim = 512, dropout = 0.04):
         super().__init__()
         #Initialises convolutional layers with various amount of context.
         self.cl_1 = nn.Conv1d(hidden_dim, hidden_dim//2, kernel_size = 3, padding = 1)
@@ -17,7 +17,7 @@ class ClassificationCNN(nn.Module):
         #Initialises intermediate fully-connected layer.
         self.input_projection = nn.Linear(embedding_dim, hidden_dim)
 
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0) 
+        self.embedding = nn.Embedding(input_size, embedding_dim, padding_idx=0) 
         #Initialises final fully connected layer.
         self.inter_fc = nn.Linear(hidden_dim * 2, hidden_dim)
         self.classifier = nn.Linear(hidden_dim, num_classes)
