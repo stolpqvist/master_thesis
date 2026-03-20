@@ -76,7 +76,7 @@ def main():
 
             print(f" {bg} Dataset sizes: train+val: {len(df_trainval)},  test: {len(df_test)}")
 
-            #INSTEAD OF OLD HERE:
+            #INSTEAD OF OLD HER#E:
             #SAVE THE NEW FILES "".to_csv"
 
             df_trainval.to_csv(pm.get_trainval_csv(bg), index=False)
@@ -89,7 +89,7 @@ def main():
 
         #test = f"../datasets/{args.bg}/{args.bg}_test.csv"
         #df_test.to_csv(test, index=False)
-data_handling       model          Results_{args.bg}.txt  train
+        #data_handling       model          Results_{args.bg}.txt  train
 
         print("Datasets created.")
 
