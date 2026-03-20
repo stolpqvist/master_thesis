@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 import pandas as pd
+import numpy as np
 
 #NOTE check the hierarchy of the files ad folders
 
@@ -32,20 +33,35 @@ class SPTokenizer:
 
     
     """
-    def __init__(self, df, model='tokenizer', vocab='vocabulary'):
+    def __init__(self, text_columns, label, df=None, model='tokenizer'):
 
         self.pm = pm("./")
 
-        if self.checker(model) is False:
-            self.create_vocab(df, model)
+        self.df = df
+        self.label = label
+        self.columns = text_columns 
+        self.label2id = {}
+        self.id2label = {}
+
+        if self.df is not None:
+
+            if self.checker(model) is False:
+                self.create_vocab(df, model)
+
         self.model = self.get_vocab(model)
-        #print(self.model)
+
+    def label_extractor(self, df) -> None:
+
+        for i, label in enumerate(np.unique(df[self.label].values)):
+            self.label2id[label] = i
+            self.id2label[i] = label
 
     def checker(self, model):
         #check if model already exists
 
-        if not pm.get_tok(model):
+        if not self.pm.get_tok(model):
             return False
+        return True
     
     def create_vocab(self, df, model):
         """
@@ -54,15 +70,15 @@ class SPTokenizer:
         """
         
 
-        text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
+        #text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
 
-        all_text = pd.concat([df[col].dropna() for col in text_columns], ignore_index=True)
+        all_text = pd.concat([df[col].dropna() for col in self.columns], ignore_index=True)
 
         pm.setup_tok()
 
         spm.SentencePieceTrainer.train(
             sentence_iterator=iter(all_text.astype(str)), #input tp construct vocab
-            model_prefix = model,
+            model_prefix = str(self.pm.tokenizer_dir / model),
             vocab_size = 16000,
             character_coverage=1.0, #all unique characters
             model_type = 'bpe', 
@@ -73,29 +89,30 @@ class SPTokenizer:
     def get_vocab(self, model):
         #load the tokenizer
         sp = spm.SentencePieceProcessor()
-        sp.load(f'{pm.tokenizer_dir}/{model}.model')
+        sp.load(str(self.pm.tokenizer_dir/f"{model}.model"))
+        
         return sp
 
     
-    def tokenizer(self, text):
+    def tokenizer(self, df):
 
-        #Example
-        #text = "Nuclear reactions are common in organic chemistry"
-        token_ids = self.model.encode(text, add_bos=True, add_eos=True, out_type=int)
-        #print(token_ids)
+        tokens = []
+        labels = []
 
-        #Subword pieces if you're curious
-        #pieces = self.model.encode(text, out_type=str)
-        #print(pieces)
+        for _, row in df.iterrows():
 
-        #NOTE: to decode : sp.decode(ids)
-        return token_ids #, pieces
+            all_text = " ".join([str(row[col]) for col in self.columns if pd.notna(row[col])])
+            label = row[self.label]
 
 
-#if __name__ == "__main__":
-#    df = pd.read_csv("./datasets/NT/NT_dataset.csv")
-#    sp = SPTokenizer(df)
-#    sp.tokenizer()
+            token_ids = self.model.encode(all_text, add_bos=True, add_eos=True, out_type=int)
+            label_idx = self.label2id[label]
 
+            tokens.append(torch.tensor(token_ids))
+            labels.append(torch.tensor(label_idx))
+        
+        t_tokens = torch.nn.utils.rnn.pad_sequence(tokens, batch_first=True, padding_value=0)
+        #t_tokens = torch.stack(tokens).unsqueeze(1)
+        t_labels = torch.stack(labels)#.unsqueeze(1)
 
-
+        return t_tokens, t_labels

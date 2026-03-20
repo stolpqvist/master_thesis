@@ -9,12 +9,15 @@ import numpy as np
 from sklearn.metrics import precision_recall_fscore_support ,accuracy_score
 
 class NNTrain:
-    def __init__(self, model, lr, epochs, batch_size, dropout, hidden_size):
+    def __init__(self, model, lr, epochs, batch_size, dropout, hidden_size, columns, label):
         self.lr = lr
         self.n_epochs = epochs
         self.batch_size = batch_size
         self.dropout = dropout
         self.hidden_size = hidden_size
+        self.columns = columns
+        self.label = label
+
         self.patience = 3
         self.patience_count = 0
         self.criterion = nn.CrossEntropyLoss()
@@ -37,7 +40,7 @@ class NNTrain:
 
     def training_loop(self, train_data, val_data):
         
-        spt = SPTokenizer(model="tokenizer")
+        spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
         #extract labels
         spt.label_extractor(train_data)
@@ -46,27 +49,27 @@ class NNTrain:
 
         num_classes = len(spt.label2id.keys())
         t_tokens, t_labels = spt.tokenizer(train_data)
-        v_t_tokens, v_t_labels = spt.tokenizer(val_data)
+        # v_t_tokens, v_t_labels = spt.tokenizer(val_data)
 
         print("Tokenizing completed")
         
         train_fold = TensorDataset(t_tokens, t_labels)
-        val_fold = TensorDataset(v_t_tokens, v_t_labels)
+        # val_fold = TensorDataset(v_t_tokens, v_t_labels)
         
         train_dataloader = DataLoader(
             train_fold,
             batch_size= self.batch_size,
             shuffle=    True
         )
-        val_dataloader = DataLoader(
-            val_fold,
-            batch_size= self.batch_size,
-            shuffle=    True
-        )
+        #val_dataloader = DataLoader(
+        #    val_fold,
+            # batch_size= self.batch_size,
+            # shuffle=    True
+        # )
 
 
         model = self.model_class(input_size=    spt.model.get_piece_size(),
-                                 embedding_dim= embedding_dim,
+                                 #embedding_dim= embedding_dim,
                                  hidden_size=   self.hidden_size, 
                                  num_classes=   num_classes,
                                  dropout=       self.dropout
@@ -76,18 +79,17 @@ class NNTrain:
 
 
         #Starting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
-        #Here -> saving the best model per epoch
-
+        best_model = None
         best_val_f1 = 0
 
         best_acc = 0
         best_rec = 0
         best_prec = 0
 
+        print("Starting training")
+
         for epoch in tqdm(range(self.n_epochs)):
             model.train()
-
-            print("Starting training")
 
             total_losses = []
             all_preds = []
@@ -126,7 +128,7 @@ class NNTrain:
                     F1-Score: {f1}" 
                     )    
         
-            val_acc, val_prec, val_rec, val_f1 = self.evaluate(val_dataloader, model)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(val_data, model)
 
             print(f"Validation results: \
                     Val Accuracy: {val_acc}, \
@@ -143,18 +145,34 @@ class NNTrain:
                 best_acc = val_acc
                 best_prec = val_prec
                 best_rec = val_rec
+                best_model = model
             else:
                 if self.patience_count < self.patience:
                     self.patience_count += 1
                     #print("We are returning")
                 else:
-                    return best_val_f1, best_acc, best_prec, best_rec, epoch
+                    return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch
 
-        return best_val_f1, best_acc, best_prec, best_rec, epoch    
+        return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch    
 
-    def evaluate(self, v_loader, model):
+    def evaluate(self, val_data, model):
+
+        spt = SPTokenizer(self.columns, self.label, model="tokenizer")
+        
+        v_t_tokens, v_t_labels = spt.tokenizer(val_data)
+
+        print("Val Tokenizing completed")
+        
+        val_fold = TensorDataset(v_t_tokens, v_t_labels)
+        
+        v_loader = DataLoader(
+            val_fold,
+            batch_size= self.batch_size,
+            shuffle=    True
+        )
 
         model.eval()
+
 
         total_losses = []
         all_preds = []

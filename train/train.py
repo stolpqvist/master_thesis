@@ -81,7 +81,7 @@ class ModelTrain:
         #STarting training 10 epochs per 1 fold -> then repeat 10 times (10 folds)
         #Here -> saving the best model per epoch
         best_val_f1 = 0
-        #best_model = None
+        best_model = None
 
         best_acc = 0
         best_rec = 0
@@ -152,13 +152,13 @@ class ModelTrain:
             #early stopping for 1 fold
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
-                #best_model = copy.deepcopy(model.state_dict())
+                best_model = copy.deepcopy(model.state_dict())
                 epoch = epoch
                 best_acc = val_acc
                 best_prec = val_prec
                 best_rec = val_rec
             else:
-                return best_val_f1, best_acc, best_prec, best_rec, epoch
+                return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
             
         
 
