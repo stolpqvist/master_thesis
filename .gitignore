@@ -6,3 +6,4 @@ notes*.txt
 *.pyc
 __pycache__/
 create_datasets/__pycache__/
+Results*.txt
