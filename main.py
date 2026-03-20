@@ -89,6 +89,7 @@ def main():
 
         #test = f"../datasets/{args.bg}/{args.bg}_test.csv"
         #df_test.to_csv(test, index=False)
+data_handling       model          Results_{args.bg}.txt  train
 
         print("Datasets created.")
 
@@ -227,11 +228,11 @@ def main():
 
 
                     #Save results into the file
-                    with open('Results.txt', 'a') as r_file:
+                    with open('Results_{args.bg}.txt', 'a') as r_file:
                         r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, Total N epochs: {args.e}, F1-Score: {best_f1_from_all_folds}, Accuracy: {best_acc}, Precision: {best_prec}, Recall: {best_rec} \n")
 
                 except Exception as e:
-                    with open('Results.txt', 'a') as r_file:
+                    with open('Results_{args.bg}.txt', 'a') as r_file:
                         r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, ERROR {e} \n")
 
     if args.train_rnn:
@@ -294,6 +295,7 @@ def main():
 
         file = f"datasets/{args.bg}/{args.bg}_trainval.csv"
 
+        print(f"Reading dataset from: {file}")
         df = pd.read_csv(file, usecols=[
             "TilldeladBeredningsgruppKortNamn",
             "AnsökanTitel",
@@ -345,7 +347,7 @@ def main():
         
         def save_trial(study, trial):
         
-            with open('Results.txt', 'a') as r_file:
+            with open(f'Results_{args.bg}.txt', 'a') as r_file:
                 r_file.write(
                     f"Trial {trial.number} | F1: {trial.value:.4f} |"
                     f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
@@ -356,7 +358,7 @@ def main():
 
 
         #Here just write the best param
-        with open('Results.txt', 'a') as r_file:
+        with open(f'Results_{args.bg}.txt', 'a') as r_file:
             r_file.write(
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "

@@ -1,0 +1,27 @@
+Trial 0 | F1: 0.7412 |LR 0.000557 | Dropout: 0.4086
+Trial 1 | F1: 0.7344 |LR 0.001920 | Dropout: 0.2305
+Trial 2 | F1: 0.7333 |LR 0.000360 | Dropout: 0.2868
+Trial 3 | F1: 0.4320 |LR 0.006754 | Dropout: 0.4722
+Trial 4 | F1: 0.7379 |LR 0.001363 | Dropout: 0.3012
+Trial 5 | F1: 0.7377 |LR 0.002513 | Dropout: 0.2695
+Trial 6 | F1: 0.6832 |LR 0.001296 | Dropout: 0.3703
+Trial 7 | F1: 0.7416 |LR 0.000553 | Dropout: 0.4105
+Trial 8 | F1: 0.6954 |LR 0.000132 | Dropout: 0.4530
+Trial 9 | F1: 0.7440 |LR 0.000840 | Dropout: 0.4776
+Trial 10 | F1: 0.6247 |LR 0.005615 | Dropout: 0.4932
+Trial 11 | F1: 0.7365 |LR 0.000372 | Dropout: 0.4154
+Trial 12 | F1: 0.7101 |LR 0.000142 | Dropout: 0.4132
+Trial 13 | F1: 0.6672 |LR 0.000488 | Dropout: 0.3559
+Trial 14 | F1: 0.7384 |LR 0.000770 | Dropout: 0.4481
+Trial 15 | F1: 0.7321 |LR 0.000219 | Dropout: 0.4950
+Trial 16 | F1: 0.6259 |LR 0.003211 | Dropout: 0.3938
+Trial 17 | F1: 0.7385 |LR 0.000760 | Dropout: 0.3230
+Trial 18 | F1: 0.7270 |LR 0.000238 | Dropout: 0.4461
+Trial 19 | F1: 0.7222 |LR 0.001174 | Dropout: 0.3802
+Trial 20 | F1: 0.4109 |LR 0.004522 | Dropout: 0.4324
+Trial 21 | F1: 0.7432 |LR 0.000587 | Dropout: 0.4049
+Trial 22 | F1: 0.7445 |LR 0.000756 | Dropout: 0.3392
+Trial 23 | F1: 0.7498 |LR 0.000871 | Dropout: 0.3321
+Trial 24 | F1: 0.5927 |LR 0.001859 | Dropout: 0.3354
+
+ Best LR: 0.000871 |Dropout: 0.3321| F1: 0.7498
