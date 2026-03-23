@@ -201,7 +201,7 @@ def main():
                             weight_decay=weight_decay
                             )
                 
-                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
+                f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold, label_cl)
                 fold_f1s.append(f1) #validation f1s
 
                 del trainer

@@ -152,14 +152,17 @@ class ModelTrain:
             #early stopping for 1 fold
             if val_f1 > best_val_f1:
                 best_val_f1 = val_f1
-                best_model = copy.deepcopy(model.state_dict())
+                #best_model = copy.deepcopy(model.state_dict())
                 epoch = epoch
                 best_acc = val_acc
                 best_prec = val_prec
                 best_rec = val_rec
             else:
-                return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
+                return best_val_f1, best_acc, best_prec, best_rec, epoch
+        
+        return best_val_f1, best_acc, best_prec, best_rec, epoch
             
+ 
         
 
 
