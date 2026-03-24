@@ -14,7 +14,8 @@ from scipy import stats
 import copy
 from utils.path_manager import PathManager
 from create_datasets.split_dataset import GroupSplit
-
+from time import sleep
+from experiment_handler import ExperimentOrganiser
 #All the training , param_hunt, eval -> experiment handler
 #fix the columns and maybe pm
 
@@ -26,7 +27,7 @@ def main():
 
     parser.add_argument('-bg', type=str, default='NT')
     parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
-    parser.add_argument('-m', type=str, default='roberta') #model
+    parser.add_argument('-m',"--model", type=str, default='roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=5) #epochs
@@ -42,21 +43,30 @@ def main():
 
     args = parser.parse_args()
 
-    if args.file is None and args.create_datasets:
-        print('Please specify path to dataset')
-        break
-     
+    if args.file is None:
+        if args.create_datasets:
+            raise Exception("To create datasets a full dataset has to be provided,\
+                    \nin order for it to be split.")
+        else:
+            raise Exception("Kindly provide a file to be used as a dataset.")
+
     if args.columns is None and args.bg:
-        df = pd.read_csv(args.f).columns.values
+        df = pd.read_csv(args.file).columns.values
         df_dict = {i: v for i,v in enumerate(df)}
-        columns = input(f"{df_dict} \nKindly select numbers of columns to be used for data:")
-        args.columns = [df_dict[col] for column in columns]
+        columns = input(f"{df_dict} \nKindly select numbers of columns to be used for data: ")
+        args.columns = [df_dict[int(column)] for column in columns]
+        print(f"The columns chosen are: {args.columns}\n")
 
     if args.label is None:
-        df = pd.read_csv(args.f).columns.values
+        df = pd.read_csv(args.file).columns.values
+        df_dict = {i:v for i,v in enumerate(df)}
+        label = input(f"{df_dict} \nKindly select the label column to be used for classification: ")
+        args.label = [df_dict[int(l)] for l in label]
+        if len(args.label) > 1:
+            raise Exception("Only one label column can be chosen")
 
     config = Config(
-        model = Model(args.m),
+        model = Model(args.model),
         k = args.k,
         batch_size = args.batch_size,
         n_epochs = args.e,
@@ -64,6 +74,17 @@ def main():
         dropout = args.dr,
         columns=args.columns,
         label=args.label)
+
+    exp = ExperimentOrganiser(
+            model_name =    args.model,
+            bg =            args.bg,
+            columns =       args.columns,
+            label =         args.label,
+            lr =            args.lr,
+            dropout =       args.dr,
+            epochs =        args.e,
+            batch_size =    args.batch_size
+            )
     
     #train(config)
     

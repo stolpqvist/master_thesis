@@ -174,14 +174,8 @@ class ExperimentOrganiser:
     def param_hunt(self, bg, columns, label, lr, dropout, epochs, batch_size):
 
         import optuna 
-        from .data_handling.strat_fold import StratifiedFold
         
-        file = f"datasets/{bg}/{bg}_trainval.csv"
 
-        df = pd.read_csv(file, usecols=[columns])
-
-        sfold = StratifiedFold(k=10)
-        sfold.stratifier(df, label)
 
 
         def objective(trial):
@@ -197,43 +191,21 @@ class ExperimentOrganiser:
 
             fold_f1s = []
 
-            for train_ids, val_ids in sfold:
-                
-                train_fold=df.iloc[train_ids]
-                val_fold=df.iloc[val_ids]
 
-                if self.model != 'roberta':
-                    from .train.train_nn import NNTrain
+            model, f1,  acc, prec, rec, epoch = self.train_setup(
+                        bg=bg,
+                        columns=    columns,
+                        label=      label,
+                        lr=         lr,
+                        dropout=    dropout,
+                        epochs=     epochs,
+                        batch_size= batch_size
+                        ) 
 
-                    trainer = NNTrain(
-                        lr=lr,
-                        epochs=epochs,
-                        batch_size=batch_size,
-                        dropout=dropout,
-                        hidden_size=512,
-                        columns=columns,
-                        label=label
-                    )
-
-
-                else:
-                    from .train.train import ModelTrain
-                    import copy
-                    
-                    trainer = ModelTrain(
-                        lr=lr,
-                        n_epochs=epochs,
-                        batch_size = batch_size,
-                        dropout= dropout,
-                        weight_decay=weight_decay
-                        )
-
-                model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-
-                fold_f1s.append(f1)
+            fold_f1s.append(f1)
               
                 
-                del trainer
+            del trainer
 
 
             return sum(fold_f1s) / len(fold_f1s)
