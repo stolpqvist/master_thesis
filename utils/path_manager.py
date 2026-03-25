@@ -13,7 +13,9 @@ class PathManager:
          #convert to a Path object and figuring where it is kinda
 
         self.datasets_dir = self.root / "datasets"
-        self.tokenizer_dir = self.root / "preprocessing" / "tokenizers" 
+        self.tokenizer_dir = self.root / "preprocessing" / "tokenizers"
+        self.result_dir = self.root / "results"
+
     
     def setup(self):
         """
@@ -52,6 +54,13 @@ class PathManager:
         create a dir for tokenizers
         """
         self.tokenizer_dir.mkdir(parents=True, exist_ok=True)
+    
+    def setup_result(self, model_name:str):
+        dirs = ['text', 'images']
+        for d in dirs:
+            results = self.results / model_name / d
+            results.mkdir(parents=True, exist_ok=True)
+        
     
     def get_tok(self, model_name):
         """
