@@ -41,6 +41,8 @@ class GroupSplit:
                 group = bg.split('-')[0]
                 subgroup = bg.split('-')[1]
 
+                if group == 'UV' and not subgroup.isdigit():
+                    continue
                 if group == 'NT' and subgroup.isdigit():
                     continue
                 if group == 'MH' and not subgroup[0].isdigit():

@@ -34,6 +34,8 @@ def filter_columns(df):
             group = bg.split('-')[0]
             subgroup = bg.split('-')[1]
 
+            if group == 'UV' and not subgroup.isdigit():
+                    continue
             if group == 'NT' and subgroup.isdigit():
                 continue
             if group == 'MH' and not subgroup[0].isdigit():
@@ -75,12 +77,12 @@ def get_visual(all_groups):
         plt.title(f" {og} Total: {total_v}")
         plt.xlabel("New Distribution")
         plt.ylabel("Number")
-        plt.savefig(f"Images/Groups/Distribution for {og}.png", dpi=300, bbox_inches='tight')
+        plt.savefig(f"../Images/Groups/Distribution for {og}.png", dpi=300, bbox_inches='tight')
         plt.show()
     
 
 
 if __name__ == "__main__":
-    df = open_file("vr_data/DATA_copy.csv")
+    df = open_file("../vr_data/data_uppdaterad.csv")
     all_groups=filter_columns(df)
     get_visual(all_groups)
