@@ -13,7 +13,8 @@ import torch
 
 class ExperimentOrganiser:
 
-    def __init__(self, model_name, bg, columns, label, lr, dropout, epochs, batch_size):
+    def __init__(self, df, model_name, bg, columns, label, lr, dropout, epochs, batch_size, param_hunt=False, train=False, test=False):
+        self.df = pd.read_csv(df, usecols=[columns])
         self.model = model_name
         self.bg = bg
         self.columns = columns
@@ -22,30 +23,68 @@ class ExperimentOrganiser:
         self.dropout = dropout
         self.epochs = epochs
         self.batch_size = batch_size
+
+        self.ph = param_hunt #False/True
+        self.train = train
+        self.test = test
+
+        self.organiser()
     
     def organiser(self):
-        model, f1,  acc, prec, rec, epoch = self.train_setup(
-                                                            self.bg, 
-                                                            self.columns, 
-                                                            self.label, 
-                                                            self.lr, 
-                                                            self.dropout, 
-                                                            self.epochs, 
-                                                            self.batch_size)
+
+        if self.train:
+
+            model, f1,  acc, prec, rec, epoch = self.train_setup(
+                                                                self.bg, 
+                                                                self.columns, 
+                                                                self.label, 
+                                                                self.lr, 
+                                                                self.dropout, 
+                                                                self.epochs, 
+                                                                self.batch_size)
+            self.save_model(model, file=None)
         
-        self.save_model(model, file=None)
+        if self.param_hunt:
+
+            self.param_hunt(
+                            self.bg, 
+                            self.columns, 
+                            self.label,   
+                            self.epochs, 
+                            self.batch_size)
+        
+        if self.test:
+
+            #load the model from directory
+
+            self.evaluate(
+                self.df,
+                self.bg, 
+                self.columns, 
+                self.label, 
+                self.lr, 
+                self.dropout, 
+                self.epochs, 
+                self.batch_size,
+                model
+            )
+
+
+            
+        
+        
     
     def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size):
         from .data_handling.strat_fold import StratifiedFold
         
 
-        file = f"datasets/{bg}/{bg}_trainval.csv"
+        #file = f"datasets/{bg}/{bg}_trainval.csv"
 
-        df = pd.read_csv(file, usecols=[columns])
+        #df = pd.read_csv(file, usecols=[columns])
 
             
         sfold = StratifiedFold(k=10)
-        sfold.stratifier(df, label)
+        sfold.stratifier(self.df, label)
 
         fold_f1s = []
         fold_acc = []
@@ -54,8 +93,8 @@ class ExperimentOrganiser:
 
         for train_ids, val_ids in sfold:
             
-            train_fold=df.iloc[train_ids]
-            val_fold=df.iloc[val_ids]
+            train_fold=self.df.iloc[train_ids]
+            val_fold=self.df.iloc[val_ids]
 
             if self.model != 'roberta':
                 from .train.train_nn import NNTrain
@@ -76,6 +115,8 @@ class ExperimentOrganiser:
                 import copy
                 
                 trainer = ModelTrain(
+                    columns=self.columns,
+                    label=self.label,
                     lr=lr,
                     n_epochs=epochs,
                     batch_size = batch_size,
@@ -111,13 +152,13 @@ class ExperimentOrganiser:
             from .train.train_nn import NNTrain
 
             trainer = NNTrain(
-                lr=lr,
-                epochs=epochs,
-                batch_size=batch_size,
-                dropout=dropout,
+                lr=         lr,
+                epochs=     epochs,
+                batch_size= batch_size,
+                dropout=    dropout,
                 hidden_size=512,
-                columns=columns,
-                label=label
+                columns=    columns,
+                label=      label
             )
 
         else:
@@ -125,10 +166,12 @@ class ExperimentOrganiser:
             import copy
             
             trainer = ModelTrain(
-                lr=lr,
-                n_epochs=epochs,
-                batch_size = batch_size,
-                dropout= dropout
+                columns=    self.columns,
+                label=      self.label,
+                lr=         lr,
+                n_epochs=   epochs,
+                batch_size= batch_size,
+                dropout=    dropout
                 )
         
         trainer.evaluate(val_data, model)
@@ -171,12 +214,10 @@ class ExperimentOrganiser:
 
         print("Datasets created.")
 
-    def param_hunt(self, bg, columns, label, lr, dropout, epochs, batch_size):
+    def param_hunt(self, bg, columns, label, epochs, batch_size):
 
         import optuna 
         
-
-
 
         def objective(trial):
 
@@ -189,7 +230,7 @@ class ExperimentOrganiser:
                 dropout = trial.suggest_float("dropout", 0.1, 0.4)
                 weight_decay = trial.suggest_float("weight_decay", 1e-4, 1e-1, log=True)
 
-            fold_f1s = []
+            #fold_f1s = []
 
 
             model, f1,  acc, prec, rec, epoch = self.train_setup(
@@ -202,13 +243,13 @@ class ExperimentOrganiser:
                         batch_size= batch_size
                         ) 
 
-            fold_f1s.append(f1)
+            #fold_f1s.append(f1)
               
                 
             del trainer
 
 
-            return sum(fold_f1s) / len(fold_f1s)
+            return f1 #sum(fold_f1s) / len(fold_f1s)
 
 
         

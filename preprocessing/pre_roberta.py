@@ -49,13 +49,13 @@ class DataProcessor(Dataset):
         row_yielder = Opens and reads chosen dataframe and yields row by row
         preprocessing = Processes the dataframe,
     """
-    def __init__(self, df):
+    def __init__(self, df, columns, label):
         self.df = df
         self.label2id = {} #defaultdict(lambda: len(self.label2id))
         self.id2label = {}
         self.tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
-        self.text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
-        self.label_column = 'TilldeladBeredningsgruppKortNamn'
+        self.text_columns = columns #["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
+        self.label_column = label #'TilldeladBeredningsgruppKortNamn'
 
 
     def label_extractor(self) -> None:

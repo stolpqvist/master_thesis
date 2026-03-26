@@ -9,7 +9,10 @@ from transformers import get_cosine_schedule_with_warmup
 import copy
 
 class ModelTrain:
-    def __init__(self, lr, n_epochs, batch_size, dropout, weight_decay):
+    def __init__(self, columns, label, lr, n_epochs, batch_size, dropout, weight_decay):
+
+        self.columns = columns
+        self.label = label
 
         self.lr = lr
         self.epochs = n_epochs
@@ -39,7 +42,7 @@ class ModelTrain:
         #num_classes = len(np.unique(train_labels))
 
         #Prepare the data:
-        train_fold = DataProcessor(data)
+        train_fold = DataProcessor(data, self.columns, self.label)
         train_fold.label_extractor()
 
         train_dataloader = DataLoader(

@@ -65,6 +65,7 @@ def main():
         if len(args.label) > 1:
             raise Exception("Only one label column can be chosen")
         print(f"The label chosen is: {args.label}")
+        
     config = Config(
         model = Model(args.model),
         k = args.k,
