@@ -10,20 +10,20 @@ Split the data into ONLY NECESSARY COLUMNS per GROUP (NT; MH; HS; UV)
 
 """
 class GroupSplit:
-    def __init__(self, pm: PathManager, columns, label, filepath="../vr_data/DATA_copy.csv"):
+    def __init__(self, pm: PathManager, columns, label, df): #filepath="../vr_data/DATA_copy.csv"):
         self.pm = pm
-        self.filename = filepath
+        #self.filename = filepath
         self.label = label
         self.columns = columns
-        self.df = self.open_file()
+        self.df = df
         self.groups = self.filter_columns(self.df, self.columns, self.label)
         self.dataset_save(self.groups, self.df, self.label)
 
 
 
-    def open_file(self):
-        df = pd.read_csv(self.filename, delimiter=',')
-        return df
+    #def open_file(self):
+    #    df = pd.read_csv(self.filename, delimiter=',')
+    #    return df
     
 
     def filter_columns(self, df, columns, label):

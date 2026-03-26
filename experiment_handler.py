@@ -13,7 +13,7 @@ import torch
 
 class ExperimentOrganiser:
 
-    def __init__(self, df, model_name, bg, columns, label, lr, dropout, epochs, batch_size, param_hunt=False, train=False, test=False):
+    def __init__(self, df, model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
         self.df = pd.read_csv(df, usecols=[columns])
         self.model = model_name
         self.bg = bg
@@ -24,6 +24,7 @@ class ExperimentOrganiser:
         self.epochs = epochs
         self.batch_size = batch_size
 
+        self.create_data = create_data
         self.ph = param_hunt #False/True
         self.train = train
         self.test = test
@@ -31,6 +32,11 @@ class ExperimentOrganiser:
         self.organiser()
     
     def organiser(self):
+
+        if self.create_data:
+        
+            self.create_datasets(self.df, self.columns, self.label)
+            
 
         if self.train:
 
@@ -179,11 +185,11 @@ class ExperimentOrganiser:
 
     def save_model(self, model, file=None):
         if file is None:
-             file = f"model/{self.model}/{self.model}.pt"
+            file = f"model/{self.model}/{self.model}.pt"
         torch.save(model.state_dict(), file)
 
 
-    def create_datasets(self, filepath, columns, label):
+    def create_datasets(self, df, columns, label):
 
         from .create_datasets.split_dataset import GroupSplit
         from sklearn.model_selection import  train_test_split
@@ -191,7 +197,7 @@ class ExperimentOrganiser:
         pm = PathManager("./")
         pm.setup()
 
-        gs = GroupSplit(pm, columns, label, filepath)
+        gs = GroupSplit(pm, columns, label, df)
 
         for bg in gs.groups: #iterate over group names
             df = pd.read_csv(pm.get_dataset_csv(bg))
