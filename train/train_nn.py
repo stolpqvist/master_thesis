@@ -22,10 +22,10 @@ class NNTrain:
         self.patience_count = 0
         self.criterion = nn.CrossEntropyLoss()
         if model == 'cnn':
-            from ..model.cnn import ClassificationCNN
+            from model.cnn import ClassificationCNN
             self.model_class = ClassificationCNN
         else:
-            from ..model.rnn import RNN
+            from model.rnn import RNN
             self.model_class = RNN
 
         if torch.cuda.is_available():
@@ -39,7 +39,7 @@ class NNTrain:
 
 
     def training_loop(self, train_data, val_data):
-        
+        print("This is in training looop", self.columns)
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
         #extract labels
@@ -159,6 +159,7 @@ class NNTrain:
 
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
+        spt.label_extractor(val_data)
         v_t_tokens, v_t_labels = spt.tokenizer(val_data)
 
         print("Val Tokenizing completed")

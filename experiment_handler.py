@@ -6,36 +6,41 @@
 import pandas as pd
 from utils.path_manager import PathManager
 import torch
+from config import Config
 
-#TODO NEW:  1. fix the pm class to check and add folder for a model and results
-#           2. Organiser
-#           3. weight decay number for RoBERTa 
+#TODO NEW:  3. weight decay number for RoBERTa 
 
 class ExperimentOrganiser:
 
-    def __init__(self, df, model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
-        self.df = pd.read_csv(df, usecols=[columns])
-        self.model = model_name
-        self.bg = bg
-        self.columns = columns
-        self.label = label
-        self.lr = lr
-        self.dropout = dropout
-        self.epochs = epochs
-        self.batch_size = batch_size
+    def __init__(self, df: pd.DataFrame, config: Config):#model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
+        self.df = df
+        self.model = config.model.value
+        self.bg = config.bg
+        self.columns = config.columns
+        self.label = config.label
+        self.lr = config.lr
+        self.dropout = config.dropout
+        self.epochs = config.n_epochs
+        self.batch_size = config.batch_size
 
-        self.create_data = create_data
-        self.ph = param_hunt #False/True
-        self.train = train
-        self.test = test
+        self.create_data = config.create_data
+        self.ph = config.param_hunt #False/True
+        self.train = config.train
+        self.test = config.test
 
         self.organiser()
     
     def organiser(self):
+        print(f"MODEL IS: repr={repr(self.model)}") 
 
         if self.create_data:
         
             self.create_datasets(self.df, self.columns, self.label)
+
+            #create the tokenizer for NN on full dataset
+            from preprocessing.pre_nn import SPTokenizer
+
+            spt = SPTokenizer(self.columns, self.label, self.df)
             
 
         if self.train:
@@ -50,7 +55,7 @@ class ExperimentOrganiser:
                                                                 self.batch_size)
             self.save_model(model, file=None)
         
-        if self.param_hunt:
+        if self.ph:
 
             self.param_hunt(
                             self.bg, 
@@ -63,7 +68,7 @@ class ExperimentOrganiser:
 
             #load the model from directory
 
-            self.evaluate(
+            acc, prec, rec, f1 = self.evaluate(
                 self.df,
                 self.bg, 
                 self.columns, 
@@ -81,7 +86,7 @@ class ExperimentOrganiser:
         
     
     def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size):
-        from .data_handling.strat_fold import StratifiedFold
+        from data_handling.strat_fold import StratifiedFold
         
 
         #file = f"datasets/{bg}/{bg}_trainval.csv"
@@ -103,9 +108,11 @@ class ExperimentOrganiser:
             val_fold=self.df.iloc[val_ids]
 
             if self.model != 'roberta':
-                from .train.train_nn import NNTrain
+                print(self.model)
+                from train.train_nn import NNTrain
 
                 trainer = NNTrain(
+                    model=self.model,
                     lr=lr,
                     epochs=epochs,
                     batch_size=batch_size,
@@ -117,8 +124,10 @@ class ExperimentOrganiser:
 
 
             else:
-                from .train.train import ModelTrain
+                from train.train import ModelTrain
                 import copy
+
+                print("Starting Roberta training")
                 
                 trainer = ModelTrain(
                     columns=self.columns,
@@ -180,7 +189,8 @@ class ExperimentOrganiser:
                 dropout=    dropout
                 )
         
-        trainer.evaluate(val_data, model)
+        accuracy, prec, rec, f1 = trainer.evaluate(val_data, model)
+        return
 
 
     def save_model(self, model, file=None):
@@ -191,17 +201,17 @@ class ExperimentOrganiser:
 
     def create_datasets(self, df, columns, label):
 
-        from .create_datasets.split_dataset import GroupSplit
+        from create_datasets.split_dataset import GroupSplit
         from sklearn.model_selection import  train_test_split
 
         pm = PathManager("./")
         pm.setup()
-
+        #print("Before GroupSlit")
         gs = GroupSplit(pm, columns, label, df)
 
         for bg in gs.groups: #iterate over group names
-            df = pd.read_csv(pm.get_dataset_csv(bg))
 
+            df = pd.read_csv(pm.get_dataset_csv(bg))
 
             df_trainval, df_test = train_test_split(
                 df,

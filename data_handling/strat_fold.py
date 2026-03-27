@@ -7,7 +7,7 @@ class StratifiedFold:
         self.k = k
         self.folds = []
 
-    def stratifier(self, df, column='TilldeladBeredningsgruppKortNamn'):
+    def stratifier(self, df, column):
 
         label2id = defaultdict(lambda: len(label2id))
 

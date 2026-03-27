@@ -37,18 +37,16 @@ class SPTokenizer:
 
         self.pm = pm("./")
 
-        self.df = df
         self.label = label
         self.columns = text_columns 
         self.label2id = {}
         self.id2label = {}
-
-        if self.df is not None:
-
-            if self.checker(model) is False:
-                self.create_vocab(df, model)
-
-        self.model = self.get_vocab(model)
+        #print("checking the tokenizer")
+        if self.checker(model) is False:
+            self.create_vocab(df, model)
+            print("The tokenizer is created")
+        else:
+            self.model = self.get_vocab(model)
 
     def label_extractor(self, df) -> None:
 
@@ -71,10 +69,10 @@ class SPTokenizer:
         
 
         #text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Beskrivning", "Nyckelord"]
-
+        print("This is in create vocab", self.columns)
         all_text = pd.concat([df[col].dropna() for col in self.columns], ignore_index=True)
 
-        pm.setup_tok()
+        self.pm.setup_tok()
 
         spm.SentencePieceTrainer.train(
             sentence_iterator=iter(all_text.astype(str)), #input tp construct vocab
@@ -96,6 +94,9 @@ class SPTokenizer:
     
     def tokenizer(self, df):
 
+        import inspect
+        #print("TOKENIZER CALLED FROM:", inspect.getfile(inspect.currentframe()))
+
         tokens = []
         labels = []
 
@@ -103,6 +104,7 @@ class SPTokenizer:
 
             all_text = " ".join([str(row[col]) for col in self.columns if pd.notna(row[col])])
             label = row[self.label]
+            
 
 
             token_ids = self.model.encode(all_text, add_bos=True, add_eos=True, out_type=int)
@@ -110,7 +112,7 @@ class SPTokenizer:
 
             tokens.append(torch.tensor(token_ids))
             labels.append(torch.tensor(label_idx))
-        
+        #print(f"label2id keys sample: {list(self.label2id.keys())}")
         t_tokens = torch.nn.utils.rnn.pad_sequence(tokens, batch_first=True, padding_value=0)
         #t_tokens = torch.stack(tokens).unsqueeze(1)
         t_labels = torch.stack(labels)#.unsqueeze(1)
