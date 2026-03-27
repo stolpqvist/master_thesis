@@ -17,10 +17,6 @@ from create_datasets.split_dataset import GroupSplit
 from time import sleep
 from experiment_handler import ExperimentOrganiser
 #All the training , param_hunt, eval -> experiment handler
-#fix the columns and maybe pm
-
-#TODO Organiser in exp_handler
-#TODO Main
 
 def check_col(file):
         df = pd.read_csv(file).columns.values
@@ -71,19 +67,11 @@ def main():
         print("\nKindly select numbers of columns to be used for data (space-separated)")
         args.columns = check_col(file)
 
-        #df = pd.read_csv(args.file).columns.values
-        #df_dict = {i: v for i,v in enumerate(df)}
-        #columns = input(f"{df_dict} \nKindly select numbers of columns to be used for data: ")
-        #args.columns = [df_dict[int(column)] for column in columns]
-        #print(f"The columns chosen are: {args.columns}\n")
+       
 
     if args.label is None:
-        #df = pd.read_csv(args.file).columns.values
-        #df_dict = {i:v for i,v in enumerate(df)}
-        #label = input(f"{df_dict} 
         print("\nKindly select the label column to be used for classification")
         args.label = check_col(file)
-        #args.label = [df_dict[int(l)] for l in label]
         if len(args.label) > 1:
             raise Exception("Only one label column can be chosen")
         print(f"The label chosen is: {args.label}")
