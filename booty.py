@@ -9,29 +9,31 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 class SigTest:
-    def __init__(self, df, models, label, n_samples, n_epochs, alpha=0.005):
+    def __init__(self, df, evaluate, models, label, n_samples, n_epochs, alpha=0.005):
         self.test = df
         self.models = models
         self.n_samples = n_samples 
         self.n_epochs = n_epochs
+        self.evaluate = evaluate
     
     def get_bootstrap_loader(self):
         indices = np.random.choice(self.num_samples, size=self.n_samples, replace=True)
 
-        dataloader = DataLoader(Subset(self.test, indices))
+        boot_set = Subset(self.test, indices)
 
-        return dataloader
+        return boot_set
 
     def bootstrap_chance(self):
         for i in tqdm(range(10), description="Bootstraping against chance"):
-
+            boot_set = self.get_bootstrap_loader()
+            for model in models:
+                f1, pre, rec, acc = self.evaluate(val_data=boot_set, model)
     def bootstrap(self, models):
 
         
         results = []
 
         for i in tqdm(range(10)):
-
             dataloader = self.get_bootstrap_loader()
 
             all_preds = []
@@ -40,69 +42,11 @@ class SigTest:
 
             for s in dataloader: 
 
-                p_tokens, p_features, p_labels, p_conv_ids = pros_batch
                 lex_tokens, lex_features, lex_labels, lex_conv_ids = lex_batch
 
                 with torch.no_grad():
                     
-                    current_batch_size = p_tokens.size(0)
-                    
-                    if current_batch_size != prev_batch_size_p:
-                        hidden_pros = pros_model.init_hidden(current_batch_size)
-                        hidden_lex = lexical_model.init_hidden(current_batch_size)
-                    #      prev_conv_id = conv_ids[0].item()
-                    prev_batch_size_p = current_batch_size
-                                
-                    pros_preds, hidden1 = pros_model(p_tokens, hidden_pros, p_features) 
-                    lex_preds, hidden2 = lexical_model(lex_tokens, hidden_lex, lex_features)
-
-                    labels = p_labels.float()
-
-                    #pros_preds = pros_preds.squeeze(-1)
-                    #lex_preds = lex_preds.squeeze(-1)
-
-                    pros_preds = (pros_preds[:, 15] > 0.5).float().cpu()
-                    lex_preds = (lex_preds[:, 15] > 0.5).float().cpu()
-                    labels= labels[:, 15].cpu()
-
-                    all_pros_preds.append(pros_preds)
-                    all_lex_preds.append(lex_preds)
-                    true_lables.append(labels)
-            #ALL Batches
-            pros_preds_fb = torch.cat(all_pros_preds).numpy()
-            lex_preds_fb = torch.cat(all_lex_preds).numpy()
-            all_labels = torch.cat(true_lables).numpy()
-
-            # Calculate metrics for prosodic model
-            pros_prec, pros_rec, pros_f1, _ = precision_recall_fscore_support(
-                all_labels, pros_preds_fb, average='binary', zero_division=0
-            )
-            pros_acc = accuracy_score(all_labels, pros_preds_fb)
-
-            pros_results.append({
-                'iteration': i,
-                'accuracy': pros_acc,
-                'precision': pros_prec,
-                'recall': pros_rec,
-                'f1': pros_f1
-            })
-
-
-            # Calculate metrics for lexical model
-            lex_prec, lex_rec, lex_f1, _ = precision_recall_fscore_support(
-                all_labels, lex_preds_fb, average='binary', zero_division=0
-            )
-            lex_acc = accuracy_score(all_labels, lex_preds_fb)
-
-            lex_results.append({
-                'iteration': i,
-                'accuracy': lex_acc,
-                'precision': lex_prec,
-                'recall': lex_rec,
-                'f1': lex_f1
-            })
-        
-        pros_df = pd.DataFrame(pros_results)
+                        pros_df = pd.DataFrame(pros_results)
         lex_df = pd.DataFrame(lex_results)
 
         self.plot_confusion_matrix(
