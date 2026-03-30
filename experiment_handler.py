@@ -200,7 +200,7 @@ class ExperimentOrganiser:
         
 
 
-    def evaluate(self, val_data, bg, columns, label, lr, dropout, epochs, batch_size, model, boot=False):
+    def evaluate(self, model, val_data, bg=self.bg, columns=self.columns, label=self.labels, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size):
 
         if self.model != 'roberta':
             from .train.train_nn import NNTrain
@@ -237,8 +237,6 @@ class ExperimentOrganiser:
         else:
             acc, prec, rec, f1 = trainer.evaluate(val_data, model, boot)
             return acc, prec, rec, f1
-        
-        
 
     def save_model(self, model, file=None):
         if file is None:
