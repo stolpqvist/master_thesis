@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Union
 
 class Model(Enum):
     roberta = "roberta"
@@ -10,7 +11,7 @@ class Model(Enum):
 
 @dataclass
 class Config:
-    model:      Model
+    model:      Union[str, list]
     k:          int
     batch_size: int
     n_epochs:   int
@@ -25,16 +26,18 @@ class Config:
     test:       bool = False
     boot:       bool = False
 
+
     @classmethod
     def from_args(cls, args) -> "Config":
         try:
-            for model in args.model:
-                model = Model(model)
+            converted = [Model(m) for m in args.model]
         except ValueError:
             raise ValueError(f"Invalid model '{args.model}'. Choose from: {[m.value for m in Model]}")
         
+        model = converted[0] if len(converted) == 1 else converted
+        
         return cls(
-            model=      args.model,
+            model=      model,
             k=          args.k,
             batch_size= args.batch_size,
             n_epochs=   args.e,
@@ -51,8 +54,11 @@ class Config:
         )
     
     def __post_init__(self):
-        if not isinstance(self.model, Model):
+        if isinstance(self.model, list):
+            invalid = [m for m in self.model if not isinstance(m, Model)]
+            if invalid:
+                raise TypeError(f"All models must be Model enums, got {[type(m).__name__ for m in invalid]}")
+        elif not isinstance(self.model, Model):
             raise TypeError(f"model must be a Model enum, got {type(self.model).__name__}")
-
     
 

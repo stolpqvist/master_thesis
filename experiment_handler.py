@@ -14,7 +14,10 @@ class ExperimentOrganiser:
 
     def __init__(self, df: pd.DataFrame, config: Config):#model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
         self.df = df
-        self.model_name = config.model.value
+        if isinstance(config.model, list):
+            self.model_name = [m.value for m in config.model]
+        else:
+            self.model_name = config.model.value 
         self.bg = config.bg
         self.columns = config.columns
         self.label = config.label
@@ -82,8 +85,6 @@ class ExperimentOrganiser:
 
         if self.boot:
 
-            #Models load
-
             from sig_test import SigTest
             bound_evaluate = partial(self.evaluate, bg=self.bg, columns=self.columns, label=self.label, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size)
             boot = SigTest(
@@ -98,28 +99,30 @@ class ExperimentOrganiser:
             if answer == "C":
                 boot.chance_test()
             if answer == "M":
-                print(self.model_name, type(self.model_name))
-                assert type(self.model_name) == list() and len(self.model_name) > 1
-                boot.model_test()
+                #print(self.model_name, type(self.model_name))
+                #assert type(self.model_name) == list() and len(self.model_name) > 1
+                boot_stats, boot_scores = boot.chance_test()
+                boot.pairwise_test(boot_scores)
+
             if answer == "B":
-                boot.chance_test()
-                boot.model_test()
+                boot_stats, boot_scores = boot.chance_test()
+                boot.pairwise_test(boot_scores)
         
-        if self.visual:
+        #if self.visual:
 
-            assert model_stats is not None, "Run boot first before visualising"
-            from utils.visualisation import Visual
+        #    assert model_stats is not None, "Run boot first before visualising"
+        #   from utils.visualisation import Visual
 
-            vis = Visual(
-                model_stats=model_stats,
-                model_preds=model_preds,
-                labels=labels,
-                label_names=self.labels
-                pairwise_result=pairwise_result
-            )
+        #    vis = Visual(
+        #        model_stats=model_stats,
+        #        model_preds=model_preds,
+        #        labels=labels,
+        #        label_names=self.labels
+        #        pairwise_result=pairwise_result
+        #    )
 
-            vis.plot_confusion_matrix()
-            vis.plot_f1_distribution()
+        #    vis.plot_confusion_matrix()
+        #    vis.plot_f1_distribution()
 
 
            

@@ -47,6 +47,9 @@ class NNTrain:
         
         #extract labels
         spt.label_extractor(train_data)
+        
+        #save to use later
+        self.label2id = spt.label2id
 
         print("Starting tokenizing")
 
@@ -160,8 +163,12 @@ class NNTrain:
 
     def evaluate(self, val_data, model, boot=False):
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
-        print(model) 
-        spt.label_extractor(val_data)
+        #print(model)
+        if hasattr(self, 'label2id'):
+            spt.label2id = self.label2id  #reuse it
+        else:
+            spt.label_extractor(val_data)
+            
         if isinstance(model, str) and model.endswith('pt'):
             model_path = model
             num_classes = len(spt.label2id.keys())
@@ -172,7 +179,7 @@ class NNTrain:
                                  num_classes=   num_classes,
                                  dropout=       self.dropout
                                  ).to(self.device) 
-            model.load_state_dict(torch.load(model_path))
+            model.load_state_dict(torch.load(model_path, map_location=self.device)) #here only for mac map_location=self.device
 
         v_t_tokens, v_t_labels = spt.tokenizer(val_data)
 

@@ -5,15 +5,14 @@ import torch
 from scipy import stats
 from torch.utils.data import DataLoader, Subset
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix
-import seaborn as sns
-import matplotlib.pyplot as plt
 from collections import namedtuple
 from itertools import combinations
 from utils.path_manager import PathManager
+
 class SigTest:
     def __init__(self, df, evaluate, models, label, n_runs=10000):
         self.test = df 
-        self.models = models.split() #a list of names
+        self.models = models #a list of names
         self.n_runs = n_runs #10.000s
         self.evaluate = evaluate
         self.n_classes = len(set(self.test[label]))
@@ -54,7 +53,7 @@ class SigTest:
                 boot_scores[model_name.model_name].append((prec, rec, f1))
         stats = self.bootstrap_stats(boot_scores)
         print(stats)
-        return stats
+        return stats, boot_scores
 
 
     def bootstrap_stats(self, boot_scores, alpha=0.005):
@@ -119,6 +118,7 @@ class SigTest:
             pairwise_results.append(
                 PairwiseResult(model_a, model_b, p_value, mean_diff)            
             )
+        print(pairwise_results)
 
 
 
