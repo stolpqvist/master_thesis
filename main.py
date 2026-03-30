@@ -43,7 +43,8 @@ def main():
     parser.add_argument('--test', action='store_true', default=False)     # Test size
     parser.add_argument('-c','--columns', default=None, help='The data columns to be used for training model')
     parser.add_argument('-l', '--label', default=None, help='The label column to be used for testing predictions')
-    parser.add_argument('-f', '--file', default=None) 
+    parser.add_argument('-f', '--file', default=None)
+    parser.add_argument('-b', '--boot', action='store_true', default=False) 
 
     args = parser.parse_args()
 
@@ -55,7 +56,9 @@ def main():
     file = args.file or args.bg
     
     if args.bg:
+
         pm = PathManager()
+        pm.setup_result(args.model)
 
         if args.train or args.param_hunt:
             file = pm.get_trainval_csv(args.bg)
@@ -66,7 +69,6 @@ def main():
     if args.columns is None:
         print("\nKindly select numbers of columns to be used for data (space-separated)")
         args.columns = check_col(file)
-
        
 
     if args.label is None:

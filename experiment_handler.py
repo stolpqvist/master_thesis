@@ -8,7 +8,6 @@ from utils.path_manager import PathManager
 import torch
 from config import Config
 
-<<<<<<< HEAD
 #TODO NEW:  3. weight decay number for RoBERTa 
 
 class ExperimentOrganiser:
@@ -81,7 +80,11 @@ class ExperimentOrganiser:
                 self.batch_size,
                 model
             )
+
         if self.boot:
+
+            #Models load
+
             from sig_test import SigTest
             boot = SigTest(
                     df = self.df,
@@ -92,6 +95,7 @@ class ExperimentOrganiser:
                     )
             
             answer = input("Chance test, Model test, Both? \n (C/M/B): ")
+
             if answer == "C":
                 boot.chance_test()
             if answer == "M":
@@ -161,6 +165,20 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
+            torch.save(model.state_dict(), f'model/{self.model_name}.pt')
+            from sig_test import SigTest
+
+            boot = SigTest(
+                    df = self.df.iloc[val_ids],
+                    evaluate = self.evaluate,
+                    models = ['rnn', 'cnn'],
+                    n_samples = self.n_samples,
+                    epochs = self.epochs
+                    )
+            
+            boot.chance_test()
+            boot.pairwise_test()
+
 
             fold_f1s.append(f1)
             fold_acc.append(acc)
@@ -182,7 +200,7 @@ class ExperimentOrganiser:
         
 
 
-    def evaluate(self, val_data, bg, columns, label, lr, dropout, epochs, batch_size, model):
+    def evaluate(self, val_data, bg, columns, label, lr, dropout, epochs, batch_size, model, boot=False):
 
         if self.model != 'roberta':
             from .train.train_nn import NNTrain
@@ -210,14 +228,17 @@ class ExperimentOrganiser:
                 dropout=    dropout
                 )
         
-<<<<<<< HEAD
-        accuracy, prec, rec, f1 = trainer.evaluate(val_data, model)
-        return
 
-=======
-        acc, prec, rec, f1 = trainer.evaluate(val_data, model)
-        return acc, prec, rec, f1 
->>>>>>> d827573 (Joint significance testing progress, and EH progress)
+        if boot:
+            
+            all_preds, all_labels, acc, prec, rec, f1 = trainer.evaluate(val_data, model, boot)
+            return all_preds, all_labels, acc, prec, rec, f1
+        
+        else:
+            acc, prec, rec, f1 = trainer.evaluate(val_data, model, boot)
+            return acc, prec, rec, f1
+        
+        
 
     def save_model(self, model, file=None):
         if file is None:
@@ -272,7 +293,6 @@ class ExperimentOrganiser:
                 dropout = trial.suggest_float("dropout", 0.1, 0.4)
                 weight_decay = trial.suggest_float("weight_decay", 1e-4, 1e-1, log=True)
 
-            #fold_f1s = []
 
 
             model, f1,  acc, prec, rec, epoch = self.train_setup(
@@ -284,20 +304,16 @@ class ExperimentOrganiser:
                         epochs=     epochs,
                         batch_size= batch_size
                         ) 
-
-            #fold_f1s.append(f1)
               
-                
-            del trainer
 
 
-            return f1 #sum(fold_f1s) / len(fold_f1s)
+            return f1 
 
 
         
         def save_trial(study, trial):
         
-            with open(f"Results{self.model}_{bg}.txt", 'a') as r_file:
+            with open(f"results/{self.model}/Results_{self.model}_{bg}.txt", 'a') as r_file:
                 r_file.write(
                     f"Trial {trial.number} | F1: {trial.value:.4f} |"
                     f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
@@ -308,7 +324,7 @@ class ExperimentOrganiser:
 
 
         #Here just write the best param
-        with open(f"Results{self.model}_{bg}.txt", 'a') as r_file:
+        with open(f"results/{self.model}/Results_{self.model}_{bg}.txt", 'a') as r_file:
             r_file.write(
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "

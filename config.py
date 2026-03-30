@@ -23,6 +23,7 @@ class Config:
     param_hunt: bool = False
     train:      bool = False
     test:       bool = False
+    boot:       bool = False
 
     @classmethod
     def from_args(cls, args) -> "Config":
@@ -44,7 +45,8 @@ class Config:
             create_data=args.create_datasets,
             param_hunt= args.param_hunt,
             train=      args.train,
-            test=       args.test
+            test=       args.test,
+            boot=       args.boot
         )
     
     def __post_init__(self):

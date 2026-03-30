@@ -155,7 +155,7 @@ class NNTrain:
 
         return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch    
 
-    def evaluate(self, val_data, model):
+    def evaluate(self, val_data, model, boot=False):
 
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
@@ -212,6 +212,8 @@ class NNTrain:
         #        Val Recall: {rec}, \
         #        Val F1-Score: {f1}" 
         #        )
-        
-        return acc, prec, rec, f1
+        if boot:
+            return all_preds, all_labels, acc, prec, rec, f1
+        else:
+            return acc, prec, rec, f1
                 
