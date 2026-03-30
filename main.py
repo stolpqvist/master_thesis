@@ -31,7 +31,7 @@ def main():
 
     parser.add_argument('-bg', type=str, default=None)
     parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
-    parser.add_argument('-m',"--model", type=str, default='roberta') #model
+    parser.add_argument('-m',"--model",nargs='+', type=str, default='roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=5) #epochs
@@ -54,17 +54,22 @@ def main():
     
 
     file = args.file or args.bg
-    
+
     if args.bg:
-
         pm = PathManager()
-        pm.setup_result(args.model)
 
-        if args.train or args.param_hunt:
+        if len(args.model) > 1:
+            for model in args.model:
+                pm.setup_result(model)
             file = pm.get_trainval_csv(args.bg)
-        if args.test:
-            file = pm.get_test_csv(args.bg)
-        
+        else:
+            pm.setup_result(str(args.model))
+            if args.train or args.param_hunt or args.boot:
+                file = pm.get_trainval_csv(args.bg)
+                print(file)
+            if args.test:
+                file = pm.get_test_csv(args.bg)
+
 
     if args.columns is None:
         print("\nKindly select numbers of columns to be used for data (space-separated)")

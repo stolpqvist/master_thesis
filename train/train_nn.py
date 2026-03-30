@@ -17,24 +17,27 @@ class NNTrain:
         self.hidden_size = hidden_size
         self.columns = columns
         self.label = label
-
+        
+        self.model_class = self.get_model(model)
         self.patience = 3
         self.patience_count = 0
         self.criterion = nn.CrossEntropyLoss()
-        if model == 'cnn':
-            from model.cnn import ClassificationCNN
-            self.model_class = ClassificationCNN
-        else:
-            from model.rnn import RNN
-            self.model_class = RNN
-
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         elif torch.backends.mps.is_available():
             self.device = torch.device("mps")
         else:
             self.device = torch.device("cpu")
-        
+
+    def get_model(self, model):
+        if model == 'cnn':
+            from model.cnn import ClassificationCNN
+            model_class = ClassificationCNN
+        else:
+            from model.rnn import RNN
+            model_class = RNN
+        return model_class
+       
 
 
 
@@ -156,10 +159,21 @@ class NNTrain:
         return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch    
 
     def evaluate(self, val_data, model, boot=False):
-
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
-        
+        print(model) 
         spt.label_extractor(val_data)
+        if isinstance(model, str) and model.endswith('pt'):
+            model_path = model
+            num_classes = len(spt.label2id.keys())
+            model_name = model.split('/')[-1].split('.')[0]
+            model_class = self.get_model(model_name)
+            model = model_class(input_size=    spt.model.get_piece_size(),
+                                 hidden_size=   self.hidden_size, 
+                                 num_classes=   num_classes,
+                                 dropout=       self.dropout
+                                 ).to(self.device) 
+            model.load_state_dict(torch.load(model_path))
+
         v_t_tokens, v_t_labels = spt.tokenizer(val_data)
 
         print("Val Tokenizing completed")

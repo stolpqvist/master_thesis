@@ -11,15 +11,15 @@ from collections import namedtuple
 from itertools import combinations
 from utils.path_manager import PathManager
 class SigTest:
-    def __init__(self, df, evaluate, models, labels, n_runs=10000):
+    def __init__(self, df, evaluate, models, label, n_runs=10000):
         self.test = df 
-        self.models = models #a list of names
+        self.models = models.split() #a list of names
         self.n_runs = n_runs #10.000s
         self.evaluate = evaluate
-        self.n_classes = len(labels)
+        self.n_classes = len(set(self.test[label]))
     
     def chance_test(self):
-        
+        print(self.models)        
         pm = PathManager()
         
         ModelResult = namedtuple('ModelResult', ['model_name', 'preds'])
@@ -28,8 +28,9 @@ class SigTest:
         for model_name in self.models:
             
             model = pm.get_model(model_name)
-            print(model)
-            all_preds, all_labels, f1, pre, rec, acc = self.evaluate(self.test, model=model, boot=True)
+            print("We are printing model: ", model)
+#            model = torch.load(
+            all_preds, all_labels, f1, pre, rec, acc = self.evaluate(val_data=self.test, model=str(model), boot=True)
             model_preds.append(
                 ModelResult(
                     model_name=f'{model_name}',
@@ -51,8 +52,9 @@ class SigTest:
                 prec, rec, f1, _ = precision_recall_fscore_support(boot_labels[i], boot_preds[i], average='macro', zero_division=0)
                 
                 boot_scores[model_name.model_name].append((prec, rec, f1))
-        
-        return boot_scores
+        stats = self.bootstrap_stats(boot_scores)
+        print(stats)
+        return stats
 
 
     def bootstrap_stats(self, boot_scores, alpha=0.005):

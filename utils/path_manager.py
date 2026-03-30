@@ -14,7 +14,7 @@ class PathManager:
 
         self.datasets_dir = self.root / "datasets"
         self.tokenizer_dir = self.root / "preprocessing" / "tokenizers"
-        self.models = self.root / "models"
+        self.models = self.root / "model"
         self.results = self.root / "results"
  
     

@@ -85,12 +85,12 @@ class ExperimentOrganiser:
             #Models load
 
             from sig_test import SigTest
+            bound_evaluate = partial(self.evaluate, bg=self.bg, columns=self.columns, label=self.label, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size)
             boot = SigTest(
                     df = self.df,
-                    evaluate = self.evaluate,
-                    models = self.models,
-                    n_samples = self.n_samples,
-                    epochs = self.epochs
+                    evaluate = bound_evaluate,
+                    models = self.model_name,
+                    label = self.label
                     )
             
             answer = input("Chance test, Model test, Both? \n (C/M/B): ")
@@ -98,7 +98,8 @@ class ExperimentOrganiser:
             if answer == "C":
                 boot.chance_test()
             if answer == "M":
-                assert type(model) == list() & len(model) > 1
+                print(self.model_name, type(self.model_name))
+                assert type(self.model_name) == list() and len(self.model_name) > 1
                 boot.model_test()
             if answer == "B":
                 boot.chance_test()
@@ -171,7 +172,7 @@ class ExperimentOrganiser:
                     df = self.df.iloc[val_ids],
                     labels = self.df.iloc[val_ids]['TilldeladBeredningsgruppKortNamn'],
                     evaluate = bound_evaluate,
-                    models = ['rnn', 'cnn'],
+                    models = ['cnn', 'rnn'],
                     )
             
             boot.chance_test()

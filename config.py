@@ -28,12 +28,13 @@ class Config:
     @classmethod
     def from_args(cls, args) -> "Config":
         try:
-            model = Model(args.model)
+            for model in args.model:
+                model = Model(model)
         except ValueError:
             raise ValueError(f"Invalid model '{args.model}'. Choose from: {[m.value for m in Model]}")
         
         return cls(
-            model=      model,
+            model=      args.model,
             k=          args.k,
             batch_size= args.batch_size,
             n_epochs=   args.e,
