@@ -28,6 +28,7 @@ class SigTest:
             boot_set = self.get_bootstrap_loader()
             for model in models:
                 f1, pre, rec, acc = self.evaluate(val_data=boot_set, model)
+
     def bootstrap(self, models):
 
         

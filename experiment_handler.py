@@ -8,6 +8,7 @@ from utils.path_manager import PathManager
 import torch
 from config import Config
 
+<<<<<<< HEAD
 #TODO NEW:  3. weight decay number for RoBERTa 
 
 class ExperimentOrganiser:
@@ -27,6 +28,7 @@ class ExperimentOrganiser:
         self.ph = config.param_hunt #False/True
         self.train = config.train
         self.test = config.test
+        self.boot = config.boot
 
         self.organiser()
     
@@ -79,9 +81,28 @@ class ExperimentOrganiser:
                 self.batch_size,
                 model
             )
-
-
+        if self.boot:
+            from sig_test import SigTest
+            boot = SigTest(
+                    df = self.df,
+                    evaluate = self.evaluate,
+                    models = self.models,
+                    n_samples = self.n_samples,
+                    epochs = self.epochs
+                    )
             
+            answer = input("Chance test, Model test, Both? \n (C/M/B): ")
+            if answer == "C":
+                boot.chance_test()
+            if answer == "M":
+                assert type(model) == list() & len(model) > 1
+                boot.model_test()
+            if answer == "B":
+                boot.chance_test()
+                boot.model_test()
+
+
+           
         
         
     
@@ -189,9 +210,14 @@ class ExperimentOrganiser:
                 dropout=    dropout
                 )
         
+<<<<<<< HEAD
         accuracy, prec, rec, f1 = trainer.evaluate(val_data, model)
         return
 
+=======
+        acc, prec, rec, f1 = trainer.evaluate(val_data, model)
+        return acc, prec, rec, f1 
+>>>>>>> d827573 (Joint significance testing progress, and EH progress)
 
     def save_model(self, model, file=None):
         if file is None:
