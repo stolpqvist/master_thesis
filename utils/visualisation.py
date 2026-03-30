@@ -89,12 +89,12 @@ class Visual:
 
         def plot_pairwise(self):
              
-            fig, ax = plt.subplot(figsize=(7, len(self.pairwise_result) * 1.5 +1))
+            fig, ax = plt.subplots(figsize=(7, len(self.pairwise_result) * 1.5 +1))
 
             for i, r in enumerate(self.pairwise_result):
                 label = f"{r['model_a']} vs {r['model_b']}"
                 color = 'green' if r['significant'] else 'gray'
-                ax.barth(i, r['mean_diff'], color=color, alpha=0.7)
+                ax.barh(i, r['mean_diff'], color=color, alpha=0.7)
                 ax.text(r['mean_diff'], i,
                         f" p={r['p_corrected']:.4f}{'*' if r['significant'] else ''}",
                         va='center')  
