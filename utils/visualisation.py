@@ -9,14 +9,15 @@ import matplotlib.pyplot as plt
 from sig_test import SigTest
 
 class Visual:
-        def __init__(self, model_stats, model_preds, labels, label_names, pairwise_result=None):
+        def __init__(self, model_stats, model_preds, labels, label_names, pairwise_result=None, save_path="results/"):
 
             self.model_stats = model_stats
             self.model_preds = model_preds
             self.labels = labels
             self.label_names = label_names
             self.pairwise_result= pairwise_result or []
-            self.model_names = list(model_stats.keys)
+            self.model_names = list(model_stats.keys())
+            self.save_path = save_path
 
         
 
@@ -51,11 +52,15 @@ class Visual:
                 ax.set_ylabel('True')
 
             plt.tight_layout()
+            
+            if self.save_path:
+                plt.savefig(f'{self.save_path}/{model_name}/images/conf_matrix.png', dpi=300, bbox_inches='tight')
+
             plt.show()
         
         def plot_f1_distribution(self, alpha=0.005):
              
-            fig, ax = plt.subplot(figsize=(9, 5))
+            fig, ax = plt.subplots(figsize=(9, 5))
             colors = plt.cm.tab10.colors
 
             for i, model_name in enumerate(self.model_names):
@@ -77,7 +82,31 @@ class Visual:
             ax.set_title('Bootstrap F1 distributions')
             ax.legend()
             plt.tight_layout()
+            if self.save_path:
+                plt.savefig(f'{self.save_path}/{model_name}/images/f1_distribution.png', dpi=300, bbox_inches='tight')
             plt.show()
+        
+
+        def plot_pairwise(self):
+             
+            fig, ax = plt.subplot(figsize=(7, len(self.pairwise_result) * 1.5 +1))
+
+            for i, r in enumerate(self.pairwise_result):
+                label = f"{r['model_a']} vs {r['model_b']}"
+                color = 'green' if r['significant'] else 'gray'
+                ax.barth(i, r['mean_diff'], color=color, alpha=0.7)
+                ax.text(r['mean_diff'], i,
+                        f" p={r['p_corrected']:.4f}{'*' if r['significant'] else ''}",
+                        va='center')  
+
+            ax.axvline(0, color='black', linewidth=1, linestyle='--')
+            ax.set_yticks(range(len(self.pairwise_result)))
+            ax.set_yticklabels([f"{r['model_a']} vs {r['model_b']}" for r in self.pairwise_result])
+            ax.set_title("Pairwise comparisom(BH-corrected)\ngreen = significant")
+            plt.tight_layout()
+            if self.save_path:
+                plt.savefig(f'{self.save_path}/pairwise_comparison.png', dpi=300, bbox_inches='tight')
+            plt.show()      
 
 
 

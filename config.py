@@ -25,6 +25,7 @@ class Config:
     train:      bool = False
     test:       bool = False
     boot:       bool = False
+    vis:        bool = False
 
 
     @classmethod
@@ -50,7 +51,8 @@ class Config:
             param_hunt= args.param_hunt,
             train=      args.train,
             test=       args.test,
-            boot=       args.boot
+            boot=       args.boot,
+            vis=        args.vis
         )
     
     def __post_init__(self):

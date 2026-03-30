@@ -31,6 +31,7 @@ class ExperimentOrganiser:
         self.train = config.train
         self.test = config.test
         self.boot = config.boot
+        self.visual = config.vis
 
         self.organiser()
     
@@ -94,35 +95,42 @@ class ExperimentOrganiser:
                     label = self.label
                     )
             
-            answer = input("Chance test, Model test, Both? \n (C/M/B): ")
+            answer = input("Chance test, Model test, Both? \n (C/M): ")
+
+            model_stats = None
+            pairwise_result = None
 
             if answer == "C":
-                boot.chance_test()
+                model_stats = boot.chance_test()
             if answer == "M":
                 #print(self.model_name, type(self.model_name))
                 #assert type(self.model_name) == list() and len(self.model_name) > 1
-                boot_stats, boot_scores = boot.chance_test()
-                boot.pairwise_test(boot_scores)
-
-            if answer == "B":
-                boot_stats, boot_scores = boot.chance_test()
-                boot.pairwise_test(boot_scores)
+                pairwise_result, model_stats = boot.pairwise_test()
+         
         
-        #if self.visual:
+            if self.visual and model_stats is not None:
+
+                from utils.visualisation import Visual
+
+                vis = Visual(
+                    model_stats=model_stats,
+                    model_preds=boot.model_preds,
+                    labels=boot.labels,
+                    label_names=self.df[self.label].unique().tolist(),
+                    pairwise_result=pairwise_result
+                )
+
+                vis.plot_confusion_matrix()
+                vis.plot_f1_distribution()
+                vis.plot_pairwise()
+
+
+            
 
         #    assert model_stats is not None, "Run boot first before visualising"
-        #   from utils.visualisation import Visual
+        #   
 
-        #    vis = Visual(
-        #        model_stats=model_stats,
-        #        model_preds=model_preds,
-        #        labels=labels,
-        #        label_names=self.labels
-        #        pairwise_result=pairwise_result
-        #    )
-
-        #    vis.plot_confusion_matrix()
-        #    vis.plot_f1_distribution()
+        #    
 
 
            

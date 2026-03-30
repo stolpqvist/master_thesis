@@ -45,6 +45,7 @@ def main():
     parser.add_argument('-l', '--label', default=None, help='The label column to be used for testing predictions')
     parser.add_argument('-f', '--file', default=None)
     parser.add_argument('-b', '--boot', action='store_true', default=False) 
+    parser.add_argument('-v', '--vis', action='store_true', default=False)
 
     args = parser.parse_args()
 
