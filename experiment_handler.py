@@ -7,14 +7,14 @@ import pandas as pd
 from utils.path_manager import PathManager
 import torch
 from config import Config
-
+from functools import partial
 #TODO NEW:  3. weight decay number for RoBERTa 
 
 class ExperimentOrganiser:
 
     def __init__(self, df: pd.DataFrame, config: Config):#model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
         self.df = df
-        self.model = config.model.value
+        self.model_name = config.model.value
         self.bg = config.bg
         self.columns = config.columns
         self.label = config.label
@@ -32,7 +32,6 @@ class ExperimentOrganiser:
         self.organiser()
     
     def organiser(self):
-        print(f"MODEL IS: repr={repr(self.model)}") 
 
         if self.create_data:
         
@@ -132,12 +131,12 @@ class ExperimentOrganiser:
             train_fold=self.df.iloc[train_ids]
             val_fold=self.df.iloc[val_ids]
 
-            if self.model != 'roberta':
-                print(self.model)
+            if self.model_name != 'roberta':
+                print(self.model_name)
                 from train.train_nn import NNTrain
 
                 trainer = NNTrain(
-                    model=self.model,
+                    model=self.model_name,
                     lr=lr,
                     epochs=epochs,
                     batch_size=batch_size,
@@ -167,13 +166,12 @@ class ExperimentOrganiser:
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
             torch.save(model.state_dict(), f'model/{self.model_name}.pt')
             from sig_test import SigTest
-
+            bound_evaluate = partial(self.evaluate, bg=self.bg, columns=self.columns, label=self.label, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size)
             boot = SigTest(
                     df = self.df.iloc[val_ids],
-                    evaluate = self.evaluate,
+                    labels = self.df.iloc[val_ids]['TilldeladBeredningsgruppKortNamn'],
+                    evaluate = bound_evaluate,
                     models = ['rnn', 'cnn'],
-                    n_samples = self.n_samples,
-                    epochs = self.epochs
                     )
             
             boot.chance_test()
@@ -200,12 +198,13 @@ class ExperimentOrganiser:
         
 
 
-    def evaluate(self, model, val_data, bg=self.bg, columns=self.columns, label=self.labels, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size):
+    def evaluate(self, model, val_data, bg, columns, label, lr, dropout, epochs, batch_size, boot=False):
 
-        if self.model != 'roberta':
-            from .train.train_nn import NNTrain
+        if self.model_name != 'roberta':
+            from train.train_nn import NNTrain
 
             trainer = NNTrain(
+                model=      self.model_name,
                 lr=         lr,
                 epochs=     epochs,
                 batch_size= batch_size,
@@ -216,7 +215,7 @@ class ExperimentOrganiser:
             )
 
         else:
-            from .train.train import ModelTrain
+            from train.train import ModelTrain
             import copy
             
             trainer = ModelTrain(

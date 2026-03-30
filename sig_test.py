@@ -10,12 +10,10 @@ import matplotlib.pyplot as plt
 from collections import namedtuple
 from itertools import combinations
 from utils.path_manager import PathManager
-
 class SigTest:
-    def __init__(self, df, evaluate, models, labels, n_samples, n_runs):
+    def __init__(self, df, evaluate, models, labels, n_runs=10000):
         self.test = df 
         self.models = models #a list of names
-        self.n_samples = n_samples 
         self.n_runs = n_runs #10.000s
         self.evaluate = evaluate
         self.n_classes = len(labels)
@@ -30,8 +28,8 @@ class SigTest:
         for model_name in self.models:
             
             model = pm.get_model(model_name)
-
-            all_preds, all_labels, f1, pre, rec, acc = self.evaluate(self.test, model, boot=True)
+            print(model)
+            all_preds, all_labels, f1, pre, rec, acc = self.evaluate(self.test, model=model, boot=True)
             model_preds.append(
                 ModelResult(
                     model_name=f'{model_name}',

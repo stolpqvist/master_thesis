@@ -35,7 +35,7 @@ def main():
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=5) #epochs
-    parser.add_argument('--batch_size', '-b', type=int, default=3)
+    parser.add_argument('--batch_size', '-bs', type=int, default=3)
     parser.add_argument('-k', type=int, default=5)
     parser.add_argument('-tr', '--train', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
