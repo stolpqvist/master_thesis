@@ -103,6 +103,22 @@ class ExperimentOrganiser:
             if answer == "B":
                 boot.chance_test()
                 boot.model_test()
+        
+        if self.visual:
+
+            assert model_stats is not None, "Run boot first before visualising"
+            from utils.visualisation import Visual
+
+            vis = Visual(
+                model_stats=model_stats,
+                model_preds=model_preds,
+                labels=labels,
+                label_names=self.labels
+                pairwise_result=pairwise_result
+            )
+
+            vis.plot_confusion_matrix()
+            vis.plot_f1_distribution()
 
 
            

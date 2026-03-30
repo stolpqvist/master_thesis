@@ -122,32 +122,7 @@ class SigTest:
 
     
 
-        # Visualize
-        
-
-        # plt.figure(figsize=(6, 5))
-        
-        # plt.boxplot([pros_df['f1'], lex_df['f1']], labels=['Model Prosodic', 'Model Lexical'])
-        # plt.ylabel('F1 Score')
-        # plt.title('Comparison')
-        # plt.tight_layout()
-        # plt.savefig('model_comparison.png')
-
-    # def plot_confusion_matrix(self, y_true, y_pred, model_name, save_path=None):
     
-        # cm = confusion_matrix(y_true, y_pred)
-        # print(f"Confusion Matrix for {model_name}:")
-        # print(cm)
-
-        # plt.figure(figsize=(6, 5))
-        # sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                    # xticklabels=['Predicted non jump-in', 'predicted-jump in'],
-                    # yticklabels=['Actual non jump-in', 'Actual jump-in'])
-        # plt.title(f'{model_name} Confusion Matrix')
-        # if save_path:
-            # plt.savefig(save_path)
-        # plt.show()
-        # plt.close()
 
                             
                             
