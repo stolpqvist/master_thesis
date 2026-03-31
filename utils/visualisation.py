@@ -89,19 +89,26 @@ class Visual:
 
         def plot_pairwise(self):
              
-            fig, ax = plt.subplots(figsize=(7, len(self.pairwise_result) * 1.5 +1))
+            n = len(self.pairwise_result) 
+            fig, ax = plt.subplots(figsize=(8, n * 1.2 + 1.5))
 
             for i, r in enumerate(self.pairwise_result):
-                label = f"{r['model_a']} vs {r['model_b']}"
                 color = 'green' if r['significant'] else 'gray'
-                ax.barh(i, r['mean_diff'], color=color, alpha=0.7)
-                ax.text(r['mean_diff'], i,
-                        f" p={r['p_corrected']:.4f}{'*' if r['significant'] else ''}",
-                        va='center')  
+                #label = f"{r['model_a']} vs {r['model_b']}"
+                
+                ax.barh(i, r['mean_diff'], color=color, alpha=0.7, height=0.3)
+                ax.text(
+                    0.02, i,
+                    #r['mean_diff'], i,
+                    f" p={r['p_corrected']:.4f}{'*' if r['significant'] else ''} Δ={r['mean_diff']:.3f}",
+                    va='center', ha='left', transform=ax.get_yaxis_transform()
+                )  
 
-            ax.axvline(0, color='black', linewidth=1, linestyle='--')
-            ax.set_yticks(range(len(self.pairwise_result)))
+            ax.axvline(0, color='black', linewidth=1.5, linestyle='--')
+            ax.set_yticks(range(n))
             ax.set_yticklabels([f"{r['model_a']} vs {r['model_b']}" for r in self.pairwise_result])
+            ax.set_ylim(-0.5, n - 0.5)
+            ax.set_xlabel("Mean F1 difference (A - B)\n← B better | A better →)")
             ax.set_title("Pairwise comparisom(BH-corrected)\ngreen = significant")
             plt.tight_layout()
             if self.save_path:
