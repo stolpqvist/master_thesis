@@ -59,17 +59,20 @@ def main():
     if args.bg:
         pm = PathManager()
 
-        if len(args.model) > 1:
-            for model in args.model:
-                pm.setup_result(model)
+        #if len(args.model) > 1:
+        for model in args.model:
+            pm.setup_result(model)
+            #file = pm.get_trainval_csv(args.bg)
+            #pm.setup_result(str(args.model))
+        if args.train or args.param_hunt or args.boot: #MOVE BOOT TO TEST_SET
+            print('Before setup boot')
+            pm.setup_boot() 
+            print('after setup boot')
             file = pm.get_trainval_csv(args.bg)
-        else:
-            pm.setup_result(str(args.model))
-            if args.train or args.param_hunt or args.boot:
-                file = pm.get_trainval_csv(args.bg)
-                print(file)
-            if args.test:
-                file = pm.get_test_csv(args.bg)
+            print(file)
+        if args.test:
+            pm.setup_boot()
+            file = pm.get_test_csv(args.bg)
 
 
     if args.columns is None:

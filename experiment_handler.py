@@ -100,9 +100,9 @@ class ExperimentOrganiser:
             model_stats = None
             pairwise_result = None
 
-            if answer == "C":
+            if answer.upper() == "C":
                 model_stats = boot.chance_test()
-            if answer == "M":
+            if answer.upper() == "M":
                 #print(self.model_name, type(self.model_name))
                 #assert type(self.model_name) == list() and len(self.model_name) > 1
                 pairwise_result, model_stats = boot.pairwise_test()
@@ -113,6 +113,7 @@ class ExperimentOrganiser:
                 from utils.visualisation import Visual
 
                 vis = Visual(
+                    bg=self.bg,
                     model_stats=model_stats,
                     model_preds=boot.model_preds,
                     labels=boot.labels,
@@ -122,7 +123,8 @@ class ExperimentOrganiser:
 
                 vis.plot_confusion_matrix()
                 vis.plot_f1_distribution()
-                vis.plot_pairwise()
+                vis.box_plot_f1()
+                #vis.plot_pairwise()
 
 
             

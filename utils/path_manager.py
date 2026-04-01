@@ -16,6 +16,7 @@ class PathManager:
         self.tokenizer_dir = self.root / "preprocessing" / "tokenizers"
         self.models = self.root / "model"
         self.results = self.root / "results"
+        self.boot = self.results /"boot"
  
     
     def setup(self):
@@ -86,7 +87,13 @@ class PathManager:
         retrieve the model
         """
         return self.models / f"{model_name}.pt"
-
+    
+    def setup_boot(self):
+        """
+        set up dir for saving bootstrap 
+        """
+        print("We are in setup_boot")
+        self.boot.mkdir(parents=True, exist_ok=True)
 
 
 #pm = PathManager()
