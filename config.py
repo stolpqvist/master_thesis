@@ -26,7 +26,7 @@ class Config:
     test:       bool = False
     boot:       bool = False
     vis:        bool = False
-
+    emissions:  bool = False
 
     @classmethod
     def from_args(cls, args) -> "Config":

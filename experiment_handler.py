@@ -18,24 +18,29 @@ class ExperimentOrganiser:
             self.model_name = [m.value for m in config.model]
         else:
             self.model_name = config.model.value 
-        self.bg = config.bg
-        self.columns = config.columns
-        self.label = config.label
-        self.lr = config.lr
-        self.dropout = config.dropout
-        self.epochs = config.n_epochs
-        self.batch_size = config.batch_size
+        self.bg =           config.bg
+        self.columns =      config.columns
+        self.label =        config.label
+        self.lr =           config.lr
+        self.dropout =      config.dropout
+        self.epochs =       config.n_epochs
+        self.batch_size =   config.batch_size
 
-        self.create_data = config.create_data
-        self.ph = config.param_hunt #False/True
-        self.train = config.train
-        self.test = config.test
-        self.boot = config.boot
-        self.visual = config.vis
+        self.create_data =  config.create_data
+        self.ph =           config.param_hunt #False/True
+        self.train =        config.train
+        self.test =         config.test
+        self.boot =         config.boot
+        self.visual =       config.vis
+        self.emissions  =   config.emissions
 
         self.organiser()
     
     def organiser(self):
+        if self.emissions:
+            from codecarbon import EmissionsTracker
+            em = EmissionTracker(country_iso_code='SWE')
+            emission = em.track_emission()
 
         if self.create_data:
         
