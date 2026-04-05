@@ -34,7 +34,7 @@ def main():
     parser.add_argument('-m',"--model",nargs='+', type=str, default='roberta') #model
     parser.add_argument('-dr', type=float, default=0.1)
     parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-e', type=int, default=5) #epochs
+    parser.add_argument('-e', type=int, default=10) #epochs
     parser.add_argument('--batch_size', '-bs', type=int, default=3)
     parser.add_argument('-k', type=int, default=5)
     parser.add_argument('-tr', '--train', action='store_true', default=False)
@@ -49,7 +49,6 @@ def main():
     parser.add_argument('-em','--emissions', action='store_true', default=False)
 
     args = parser.parse_args()
-
     if args.create_datasets and args.file is None:
         raise Exception("To create datasets a full dataset has to be provided,\
                     \nin order for it to be split.")
@@ -89,8 +88,9 @@ def main():
         print(f"The label chosen is: {args.label}")
 
     df = pd.read_csv(file)    
-        
+    print(args.emissions)
     config = Config.from_args(args)
+    print(config.emissions)
     exp = ExperimentOrganiser(df=df, config=config)
     
 

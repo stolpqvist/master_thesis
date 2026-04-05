@@ -14,7 +14,7 @@ class PathManager:
 
         self.datasets_dir = self.root / "datasets"
         self.tokenizer_dir = self.root / "preprocessing" / "tokenizers"
-        self.models = self.root / "model"
+        self.models = self.root / "models"
         self.results = self.root / "results"
         self.boot = self.results /"boot"
  
@@ -76,11 +76,17 @@ class PathManager:
             results = self.results / model_name / d
             results.mkdir(parents=True, exist_ok=True)
     
-    def setup_model(self, model_name):
+    def setup_model(self, list_model):
         """
         creates a folder for saving models
         """
-        self.models.mkdir(parents=True, exist_ok=True)
+        if isinstance(list_model, str):
+            list_model = list_model.split()
+
+
+        for model in list_model:
+            path = self.models / model
+            path.mkdir(parents=True, exist_ok=True)
     
     def get_model(self, model_name):
         """

@@ -34,14 +34,18 @@ class ExperimentOrganiser:
         self.boot =         config.boot
         self.visual =       config.vis
         self.emissions  =   config.emissions
-
+        pm = PathManager('./')
+        pm.setup_model(self.model_name)
+ 
         self.organiser()
-    
+   
     def organiser(self):
+        print(self.emissions)
         if self.emissions:
+            print(self.emissions)
             from codecarbon import EmissionsTracker
-            emission_tracker = EmissionTracker(country_iso_code='SWE')
-            emissions_tracker.start()
+            emission_tracker = EmissionsTracker(log_level='error')
+            emission_tracker.start()
 
         if self.create_data:
         
@@ -63,7 +67,7 @@ class ExperimentOrganiser:
                                                                 self.dropout, 
                                                                 self.epochs, 
                                                                 self.batch_size,
-                                                                emissions = emissions_tracker if self.emissions else None
+                                                                emissions = emission_tracker if self.emissions else None
                                                                 )
             self.save_model(model, file=None)
         
@@ -112,8 +116,6 @@ class ExperimentOrganiser:
             if answer.upper() == "C":
                 model_stats = boot.chance_test()
             if answer.upper() == "M":
-                #print(self.model_name, type(self.model_name))
-                #assert type(self.model_name) == list() and len(self.model_name) > 1
                 pairwise_result, model_stats = boot.pairwise_test()
          
         
@@ -148,7 +150,7 @@ class ExperimentOrganiser:
         
         
     
-    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size, ph=False, emissions=False):
+    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size, ph=False, emissions=None):
         from data_handling.strat_fold import StratifiedFold
         
 
@@ -171,7 +173,6 @@ class ExperimentOrganiser:
             val_fold=self.df.iloc[val_ids]
 
             if self.model_name != 'roberta':
-                print(self.model_name)
                 from train.train_nn import NNTrain
 
                 trainer = NNTrain(
@@ -203,7 +204,7 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-            torch.save(model.state_dict(), f'model/{self.model_name}_{self.bg}.pt')
+            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}.pt')
 
 
             fold_f1s.append(f1)
@@ -220,9 +221,10 @@ class ExperimentOrganiser:
         mean_rec = sum(fold_rec) / len(fold_rec)
         if not ph:
             if self.emissions:
-                emissions.stop()
-            with open(f"Results{self.model}_{bg}.txt", 'a') as r_file:
-                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ""}" )
+                emissions = emissions.stop()
+                print(emissions)
+            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
+                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq")
 
             
         return model, f1, acc, prec, rec, epoch
@@ -270,7 +272,7 @@ class ExperimentOrganiser:
 
     def save_model(self, model, file=None):
         if file is None:
-            file = f"model/{self.model}/{self.model}.pt"
+            file = f"models/{self.model_name}/{self.model_name}_{self.bg}.pt"
         torch.save(model.state_dict(), file)
 
 
@@ -281,7 +283,6 @@ class ExperimentOrganiser:
 
         pm = PathManager("./")
         pm.setup()
-        #print("Before GroupSlit")
         gs = GroupSplit(pm, columns, label, df)
 
         for bg in gs.groups: #iterate over group names
@@ -343,7 +344,7 @@ class ExperimentOrganiser:
         
         def save_trial(study, trial):
         
-            with open(f"results/{self.model}/Results_{self.model}_{bg}.txt", 'a') as r_file:
+            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
                 r_file.write(
                     f"Trial {trial.number} | F1: {trial.value:.4f} |"
                     f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
@@ -355,7 +356,7 @@ class ExperimentOrganiser:
             emissions.stop()
 
         #Here just write the best param
-        with open(f"results/{self.model}/Results_{self.model}_{bg}.txt", 'a') as r_file:
+        with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
             r_file.write(
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "
