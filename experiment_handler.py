@@ -25,6 +25,7 @@ class ExperimentOrganiser:
         self.dropout =      config.dropout
         self.epochs =       config.n_epochs
         self.batch_size =   config.batch_size
+        self.k =            config.k
 
         self.create_data =  config.create_data
         self.ph =           config.param_hunt #False/True
@@ -39,8 +40,8 @@ class ExperimentOrganiser:
     def organiser(self):
         if self.emissions:
             from codecarbon import EmissionsTracker
-            em = EmissionTracker(country_iso_code='SWE')
-            emission = em.track_emission()
+            emission_tracker = EmissionTracker(country_iso_code='SWE')
+            emissions_tracker.start()
 
         if self.create_data:
         
@@ -61,7 +62,9 @@ class ExperimentOrganiser:
                                                                 self.lr, 
                                                                 self.dropout, 
                                                                 self.epochs, 
-                                                                self.batch_size)
+                                                                self.batch_size,
+                                                                emissions = emissions_tracker if self.emissions else None
+                                                                )
             self.save_model(model, file=None)
         
         if self.ph:
@@ -71,7 +74,8 @@ class ExperimentOrganiser:
                             self.columns, 
                             self.label,   
                             self.epochs, 
-                            self.batch_size)
+                            self.batch_size,
+                            emission = emissions_tracker if self.emissions else None)
         
         if self.test:
 
@@ -144,7 +148,7 @@ class ExperimentOrganiser:
         
         
     
-    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size):
+    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size, ph=False, emissions=False):
         from data_handling.strat_fold import StratifiedFold
         
 
@@ -153,7 +157,7 @@ class ExperimentOrganiser:
         #df = pd.read_csv(file, usecols=[columns])
 
             
-        sfold = StratifiedFold(k=10)
+        sfold = StratifiedFold(k=self.k)
         sfold.stratifier(self.df, label)
 
         fold_f1s = []
@@ -199,18 +203,7 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-            torch.save(model.state_dict(), f'model/{self.model_name}.pt')
-            from sig_test import SigTest
-            bound_evaluate = partial(self.evaluate, bg=self.bg, columns=self.columns, label=self.label, lr=self.lr, dropout=self.dropout, epochs=self.epochs, batch_size=self.batch_size)
-            boot = SigTest(
-                    df = self.df.iloc[val_ids],
-                    labels = self.df.iloc[val_ids]['TilldeladBeredningsgruppKortNamn'],
-                    evaluate = bound_evaluate,
-                    models = ['cnn', 'rnn'],
-                    )
-            
-            boot.chance_test()
-            boot.pairwise_test()
+            torch.save(model.state_dict(), f'model/{self.model_name}_{self.bg}.pt')
 
 
             fold_f1s.append(f1)
@@ -225,10 +218,13 @@ class ExperimentOrganiser:
         mean_acc = sum(fold_acc) / len(fold_acc)
         mean_prec = sum(fold_prec) / len(fold_prec)
         mean_rec = sum(fold_rec) / len(fold_rec)
+        if not ph:
+            if self.emissions:
+                emissions.stop()
+            with open(f"Results{self.model}_{bg}.txt", 'a') as r_file:
+                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ""}" )
 
-        with open(f"Results{self.model}_{bg}.txt", 'a') as r_file:
-                    r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}")
-        
+            
         return model, f1, acc, prec, rec, epoch
         
 
@@ -309,14 +305,14 @@ class ExperimentOrganiser:
 
         print("Datasets created.")
 
-    def param_hunt(self, bg, columns, label, epochs, batch_size):
+    def param_hunt(self, bg, columns, label, epochs, batch_size, emission = None):
 
         import optuna 
         
 
         def objective(trial):
 
-            if self.model != 'roberta':
+            if self.model_name != 'roberta':
                 lr = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
                 dropout = trial.suggest_float("dropout", 0.2, 0.5)
 
@@ -334,7 +330,9 @@ class ExperimentOrganiser:
                         lr=         lr,
                         dropout=    dropout,
                         epochs=     epochs,
-                        batch_size= batch_size
+                        batch_size= batch_size,
+                        ph =        True,
+                        emissions = emissions if self.emissions else None
                         ) 
               
 
@@ -353,7 +351,8 @@ class ExperimentOrganiser:
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials = 25, callbacks=[save_trial]) #25 combinations
-
+        if self.emissions:
+            emissions.stop()
 
         #Here just write the best param
         with open(f"results/{self.model}/Results_{self.model}_{bg}.txt", 'a') as r_file:
@@ -361,6 +360,7 @@ class ExperimentOrganiser:
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "
                 f"F1: {study.best_value:.4f}\n"
+                f"Total Emissions: {emissions if self.emissions else {}}"
             )         
 
         
