@@ -47,7 +47,6 @@ class NNTrain:
         
         #extract labels
         spt.label_extractor(train_data)
-        
         #save to use later
         self.label2id = spt.label2id
 
@@ -166,8 +165,11 @@ class NNTrain:
         #print(model)
         if hasattr(self, 'label2id'):
             spt.label2id = self.label2id  #reuse it
+            spt.id2label = self.id2label
         else:
             spt.label_extractor(val_data)
+            self.label2id = spt.label2id
+            self.id2label = spt.id2label
             
         if isinstance(model, str) and model.endswith('pt'):
             model_path = model

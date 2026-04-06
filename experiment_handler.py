@@ -44,7 +44,7 @@ class ExperimentOrganiser:
         if self.emissions:
             print(self.emissions)
             from codecarbon import EmissionsTracker
-            emission_tracker = EmissionsTracker(log_level='error')
+            emission_tracker = EmissionsTracker(log_level='critical')
             emission_tracker.start()
 
         if self.create_data:
@@ -79,7 +79,7 @@ class ExperimentOrganiser:
                             self.label,   
                             self.epochs, 
                             self.batch_size,
-                            emission = emissions_tracker if self.emissions else None)
+                            emission = emission_tracker if self.emissions else None)
         
         if self.test:
 
@@ -333,7 +333,7 @@ class ExperimentOrganiser:
                         epochs=     epochs,
                         batch_size= batch_size,
                         ph =        True,
-                        emissions = emissions if self.emissions else None
+                        emissions = emission if self.emissions else None
                         ) 
               
 

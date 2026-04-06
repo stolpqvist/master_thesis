@@ -52,7 +52,8 @@ class Config:
             train=      args.train,
             test=       args.test,
             boot=       args.boot,
-            vis=        args.vis
+            vis=        args.vis,
+            emissions = args.emissions
         )
     
     def __post_init__(self):
