@@ -17,6 +17,8 @@ class NNTrain:
         self.hidden_size = hidden_size
         self.columns = columns
         self.label = label
+        self.label2id: dict | None = None
+        self.id2label: dict | None = None
         
         self.model_class = self.get_model(model)
         self.patience = 3
@@ -163,7 +165,7 @@ class NNTrain:
     def evaluate(self, val_data, model, boot=False):
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         #print(model)
-        if hasattr(self, 'label2id'):
+        if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
             spt.label2id = self.label2id  #reuse it
             spt.id2label = self.id2label
         else:
