@@ -61,31 +61,31 @@ class SigTest:
                 boot_scores[model_name.model_name].append((prec, rec, f1))
 
         #returen stats
-        stats = self.bootstrap_stats(boot_scores)
+        stats = self.bootstrap_stats(boot_scores, self.model_preds, self.labels)
         
         print(stats)
         return stats
 
 
-    def bootstrap_stats(self, boot_scores, alpha=0.005):
+    def bootstrap_stats(self, boot_scores, preds_dict, labels, alpha=0.005):
 
 
         ChanceResult = namedtuple('ChanceResult', ['model_name', 'mean_f1', 'ci_lower', 'ci_upper', 'p_value'])
 
         model_stats = {}
-        for model, boot_scores in boot_scores.items():
+        for model, scores in boot_scores.items():
             #f1 index f1
 
-            f1s = np.array([s[2] for s in boot_scores])
+            f1s = np.array([s[2] for s in scores])
 
             mean_f1 = np.mean(f1s)
 
             #Confidence interval: the rangge within the F1 likely falls
 
-            ci_lower = np.percentile(f1s, 100 * alpha / 2)
-            ci_upper = np.percentile(f1s, 100 * (1-alpha / 2))
+            ci_lower = np.percentile(f1s, 100 * (alpha / 2))
+            ci_upper = np.percentile(f1s, 100 * (1 - alpha / 2))
 
-            p_value = self.compute_chance_pvalue(f1s)
+            p_value = self.compute_chance_pvalue(preds=preds_dict[model], labels=labels)
 
             model_stats[model] = {
                 'f1s' : f1s,
@@ -94,13 +94,25 @@ class SigTest:
         
         return model_stats
     
-    def compute_chance_pvalue(self, f1s):
+    def compute_chance_pvalue(self, preds, labels, n_perm=1000):
 
-        chance_level = 1 /self.n_classes
+        #observed score:
+        _, _, f1_obs, _ = precision_recall_fscore_support(labels, preds, average='macro', zero_division=0)
+
+        #null scores:
+        f1_null = []
+        for _ in range(n_perm):
+            perm_labels = np.random.permutation(labels)
+            _, _, f1_perm, _ = precision_recall_fscore_support(perm_labels, preds, average='macro', zero_division=0)
+            f1_null.append(f1_perm)
+
+        #chance_level = 1 /self.n_classes
 
         #f1s = np.array([s[2] for s in boot_scores[model_name]])
 
-        p_value = np.mean(f1s <= chance_level)
+        f1_null = np.array(f1_null)
+
+        p_value = np.mean(f1_null >= f1_obs)
 
         return p_value
 
@@ -124,14 +136,25 @@ class SigTest:
             mean_diff = np.mean(diffs)
 
             #p-value
-            if mean_diff >= 0:
-                p_value = np.mean(diffs <= 0)
-            else:
-                p_value = np.mean(diffs >= 0)
+            #if mean_diff >= 0:
+            #    p_value = np.mean(diffs <= 0)
+            #else:
+            #    p_value = np.mean(diffs >= 0)
+
+            #two tailed t test
+            p_value = np.mean(np.abs(diffs) >= np.abs(mean_diff))
+
+            # Determine which model is better (if significant)
+            better_model = None
+            if p_value < 0.05:
+                better_model = model_a if mean_diff > 0 else model_b
             
             pairwise_results.append({
-                'model_a': model_a, 'model_b': model_b, 
-                'p_value': p_value, 'mean_diff': mean_diff            
+                'model_a': model_a,
+                'model_b': model_b, 
+                'p_value': p_value, 
+                'mean_diff': mean_diff,
+                'better_model': better_model
             })
         
 

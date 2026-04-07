@@ -204,7 +204,7 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}.pt')
+            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}_test.pt')
 
 
             fold_f1s.append(f1)
