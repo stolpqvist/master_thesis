@@ -64,13 +64,13 @@ def main():
             pm.setup_result(model)
 
 
-        if args.train or args.param_hunt or args.boot: #MOVE BOOT TO TEST_SET
+        if args.train or args.param_hunt:  #MOVE BOOT TO TEST_SET
 
             pm.setup_boot() 
 
             file = pm.get_trainval_csv(args.bg)
 
-        if args.test:
+        if args.test or args.boot:
             pm.setup_boot()
             file = pm.get_test_csv(args.bg)
 

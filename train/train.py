@@ -9,7 +9,7 @@ from transformers import get_cosine_schedule_with_warmup
 import copy
 
 class ModelTrain:
-    def __init__(self, columns, label, lr, n_epochs, batch_size, dropout, weight_decay):
+    def __init__(self, columns, label, lr, n_epochs, batch_size, dropout, weight_decay=1e-4):
 
         self.columns = columns
         self.label = label
@@ -166,22 +166,39 @@ class ModelTrain:
         
 
 
-    def evaluate(self, model, val_data):
-        model.eval()
+    def evaluate(self, model, val_data, boot=False):
         total_losses = 0
         all_preds = []
         all_labels = []
         
-        val_fold = DataProcessor(val_data)
+        val_fold = DataProcessor(df=val_data, columns=self.columns, label=self.label)
         val_fold.label_extractor()
-
-        val_dataloader = DataLoader(
+        
+        if boot:
+            model_path = model
+            model = CustomXLMRoberta(
+                    num_classes=len(val_fold.label2id.keys()),
+                    hidden_dropout=self.dropout
+                ).to(self.device)   
+            model.load_state_dict(torch.load(model_path))
+            val_dataloader = DataLoader(
                 val_fold,
                 batch_size =    self.batch_size,
-                shuffle =       True,
+                shuffle =       False,
                 num_workers =   4,
                 pin_memory =    False
                 )
+        
+        else:
+            val_dataloader = DataLoader(
+                    val_fold,
+                    batch_size =    self.batch_size,
+                    shuffle =       True,
+                    num_workers =   4,
+                    pin_memory =    False
+                    )
+        model.eval()
+        
         with torch.no_grad():
             for fields, b_labels in val_dataloader:
                 fields = {k: v.to(self.device) for k,v in fields.items()}
@@ -198,8 +215,10 @@ class ModelTrain:
                 all_labels.extend(b_labels.cpu().tolist())
         accuracy = accuracy_score(all_labels, all_preds)
         prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division = 0)
-
-        return accuracy, prec, rec, f1
+        if boot:
+            return all_preds, all_labels, accuracy, prec, rec, f1
+        else:    
+            return accuracy, prec, rec, f1
       
 
 

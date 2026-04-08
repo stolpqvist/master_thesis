@@ -88,11 +88,11 @@ class PathManager:
             path = self.models / model
             path.mkdir(parents=True, exist_ok=True)
     
-    def get_model(self, model_name):
+    def get_model(self, model_name, bg):
         """
         retrieve the model
         """
-        return self.models / f"{model_name}.pt"
+        return self.models / f"{model_name}" / f"{model_name}_{bg}.pt"
     
     def setup_boot(self):
         """

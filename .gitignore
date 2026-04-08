@@ -8,3 +8,5 @@ results/*
 models/*
 emissions.csv
 models/*
+Results_MH_rnn.txt
+Results_UV_rnn.txt

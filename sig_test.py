@@ -11,11 +11,12 @@ from utils.path_manager import PathManager
 from statsmodels.stats.multitest import multipletests
 
 class SigTest:
-    def __init__(self, df, evaluate, models, label, n_runs=10000):
+    def __init__(self, df, evaluate, models, bg, label, n_runs=10000):
         self.test = df 
         self.models = models #a list of names
         self.n_runs = n_runs #10.000s
         self.evaluate = evaluate
+        self.bg = bg
         self.n_classes = len(set(self.test[label]))
         self.labels = None
         self.model_preds = None
@@ -30,16 +31,19 @@ class SigTest:
 
         for model_name in self.models:
             
-            model = pm.get_model(model_name)
+            model = pm.get_model(model_name, self.bg)
             print("We are printing model: ", model)
 #            model = torch.load(
             all_preds, all_labels, f1, pre, rec, acc = self.evaluate(val_data=self.test, model=str(model), boot=True)
             model_preds.append(
                 ModelResult(
                     model_name=f'{model_name}',
-                      preds=all_preds
+                      preds=np.array(all_preds)
                       ))
-            labels = all_labels
+            
+            #only once, bc they are shuffled othersie
+            if labels is None:
+                labels = all_labels
         
         #Original preds for conf matrices:
         self.model_preds = {m.model_name: m.preds for m in model_preds}
@@ -67,7 +71,7 @@ class SigTest:
         return stats
 
 
-    def bootstrap_stats(self, boot_scores, preds_dict, labels, alpha=0.005):
+    def bootstrap_stats(self, boot_scores, preds_dict, labels, alpha=0.05):
 
 
         ChanceResult = namedtuple('ChanceResult', ['model_name', 'mean_f1', 'ci_lower', 'ci_upper', 'p_value'])
@@ -85,10 +89,11 @@ class SigTest:
             ci_lower = np.percentile(f1s, 100 * (alpha / 2))
             ci_upper = np.percentile(f1s, 100 * (1 - alpha / 2))
 
-            p_value = self.compute_chance_pvalue(preds=preds_dict[model], labels=labels)
+            p_value, f1_obs = self.compute_chance_pvalue(preds=preds_dict[model], labels=labels)
 
             model_stats[model] = {
                 'f1s' : f1s,
+                'f1_obs': f1_obs,
                 'result': ChanceResult(model, mean_f1, ci_lower, ci_upper, p_value)
             }
         
@@ -114,7 +119,7 @@ class SigTest:
 
         p_value = np.mean(f1_null >= f1_obs)
 
-        return p_value
+        return p_value, f1_obs
 
     def pairwise_test(self):
 
@@ -131,29 +136,27 @@ class SigTest:
             f1s_a = model_stats[model_a]['f1s']
             f1s_b = model_stats[model_b]['f1s']
 
+            observed_diff = model_stats[model_a]['f1_obs'] - model_stats[model_b]['f1_obs']
+
             #difference per bootstrap run
             diffs = f1s_a - f1s_b
-            mean_diff = np.mean(diffs)
+            diffs_centered = diffs - np.mean(diffs)
 
-            #p-value
-            #if mean_diff >= 0:
-            #    p_value = np.mean(diffs <= 0)
-            #else:
-            #    p_value = np.mean(diffs >= 0)
+           
 
             #two tailed t test
-            p_value = np.mean(np.abs(diffs) >= np.abs(mean_diff))
+            p_value = np.mean(np.abs(diffs_centered) >= np.abs(observed_diff))
 
             # Determine which model is better (if significant)
             better_model = None
             if p_value < 0.05:
-                better_model = model_a if mean_diff > 0 else model_b
+                better_model = model_a if observed_diff > 0 else model_b
             
             pairwise_results.append({
                 'model_a': model_a,
                 'model_b': model_b, 
                 'p_value': p_value, 
-                'mean_diff': mean_diff,
+                'mean_diff': observed_diff,
                 'better_model': better_model
             })
         

@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import torch
 import torch.nn as nn
 import numpy as np
+import os
 from sklearn.metrics import precision_recall_fscore_support ,accuracy_score
 
 class NNTrain:
@@ -164,8 +165,9 @@ class NNTrain:
 
     def evaluate(self, val_data, model, boot=False):
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
-        #print(model)
-        if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
+        print("This is model in evaluate", model)
+        #if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
+        if self.label2id is not None and self.id2label is not None:
             spt.label2id = self.label2id  #reuse it
             spt.id2label = self.id2label
         else:
@@ -174,9 +176,13 @@ class NNTrain:
             self.id2label = spt.id2label
             
         if isinstance(model, str) and model.endswith('pt'):
+
             model_path = model
             num_classes = len(spt.label2id.keys())
-            model_name = model.split('/')[-1].split('.')[0]
+
+            #model_name = model.split('/')[-1].split('_')[0] #does not work for windows
+            model_name = os.path.basename(model).split("_")[0] 
+            print("this is model name", model_name)
             model_class = self.get_model(model_name)
             model = model_class(input_size=    spt.model.get_piece_size(),
                                  hidden_size=   self.hidden_size, 
@@ -194,7 +200,7 @@ class NNTrain:
         v_loader = DataLoader(
             val_fold,
             batch_size= self.batch_size,
-            shuffle=    True
+            shuffle=    not boot #not shuffle for boot
         )
 
         model.eval()

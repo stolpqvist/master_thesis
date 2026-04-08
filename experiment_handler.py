@@ -105,6 +105,7 @@ class ExperimentOrganiser:
                     df = self.df,
                     evaluate = bound_evaluate,
                     models = self.model_name,
+                    bg = self.bg,
                     label = self.label
                     )
             
@@ -204,7 +205,7 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}_test.pt')
+            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}.pt')
 
 
             fold_f1s.append(f1)
@@ -232,12 +233,14 @@ class ExperimentOrganiser:
 
 
     def evaluate(self, model, val_data, bg, columns, label, lr, dropout, epochs, batch_size, boot=False):
+        import os
+        current_model = os.path.basename(model).split('_')[0]
 
-        if self.model_name != 'roberta':
+        if current_model != 'roberta':
             from train.train_nn import NNTrain
 
             trainer = NNTrain(
-                model=      self.model_name,
+                model=      current_model,
                 lr=         lr,
                 epochs=     epochs,
                 batch_size= batch_size,
@@ -262,8 +265,7 @@ class ExperimentOrganiser:
         
 
         if boot:
-            
-            all_preds, all_labels, acc, prec, rec, f1 = trainer.evaluate(val_data, model, boot)
+            all_preds, all_labels, acc, prec, rec, f1 = trainer.evaluate(val_data=val_data, model=model, boot=boot)
             return all_preds, all_labels, acc, prec, rec, f1
         
         else:
@@ -344,7 +346,7 @@ class ExperimentOrganiser:
         
         def save_trial(study, trial):
         
-            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
+            with open(f"results/{self.model_name}/text/Results_param_hunt_{self.model_name}_{bg}.txt", 'a') as r_file:
                 r_file.write(
                     f"Trial {trial.number} | F1: {trial.value:.4f} |"
                     f"LR {trial.params['lr']:.6f} | Dropout: {trial.params['dropout']:.4f}\n"
@@ -356,7 +358,7 @@ class ExperimentOrganiser:
             emissions.stop()
 
         #Here just write the best param
-        with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
+        with open(f"results/{self.model_name}/text/Results_param_hunt_{self.model_name}_{bg}.txt", 'a') as r_file:
             r_file.write(
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "
