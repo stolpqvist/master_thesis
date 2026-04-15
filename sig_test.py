@@ -161,17 +161,17 @@ class SigTest:
             })
         
 
-        self.fdr_error(pairwise_results)
+        self.p_value_correction(pairwise_results)
         print(pairwise_results)
         return pairwise_results, model_stats
     
-    def fdr_error(self, pairwise_results):
+    def p_value_correction(self, pairwise_results):
         """
-        FDR-based corrections
+        Bonferroni-based corrections
         """
 
         p_values = [r['p_value'] for r in pairwise_results]
-        reject, p_corrected, _, _ = multipletests(p_values, alpha=0.05, method='fdr_bh')
+        reject, p_corrected, _, _ = multipletests(p_values, alpha=0.05, method='bonferroni')
 
         for r, p_corr, sig in zip(pairwise_results, p_corrected, reject):
             r['p_corrected'] = p_corr
