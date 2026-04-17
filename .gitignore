@@ -1,6 +1,6 @@
 datasets/
+*/__pycache__/
+__pycache__/
+Results_roberta_MH_14.txt
+Results_roberta_MH.txt
 .DS_Store
-model/__pycache__/rnn.cpython-312.pyc
-train/__pycache__/train_nn.cpython-312.pyc
-results/
-models/
