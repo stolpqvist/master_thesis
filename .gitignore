@@ -2,3 +2,5 @@ datasets/
 .DS_Store
 model/__pycache__/rnn.cpython-312.pyc
 train/__pycache__/train_nn.cpython-312.pyc
+results/
+models/
