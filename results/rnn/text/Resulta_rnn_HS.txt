@@ -1,0 +1,1 @@
+Learning rate: 0.000871 Dropout: 0.3321 F1-Score: 0.7506
