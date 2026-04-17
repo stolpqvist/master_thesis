@@ -65,7 +65,7 @@ class DataProcessor(Dataset):
         """
 
         #add to labels
-        for i, label in enumerate(np.unique(self.df[self.label_column].values)):
+        for i, label in enumerate(sorted(self.df[self.label_column].unique())):
             self.label2id[label] = i
             self.id2label[i] = label
 

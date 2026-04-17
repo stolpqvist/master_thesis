@@ -166,11 +166,10 @@ class ModelTrain:
         
 
 
-    def evaluate(self, model, val_data, boot=False):
+    def evaluate(self, model, val_data, bg = None,boot=False):
         total_losses = 0
         all_preds = []
         all_labels = []
-        print(boot)        
         val_fold = DataProcessor(df=val_data, columns=self.columns, label=self.label)
         val_fold.label_extractor()
         
@@ -180,6 +179,9 @@ class ModelTrain:
                     num_classes=len(val_fold.label2id.keys()),
                     hidden_dropout=self.dropout
                 ).to(self.device)   
+            if bg is not None:
+                model_path = f'models/{model_path}/{model_path}_{bg}.pt'
+                print(model_path)
             model.load_state_dict(torch.load(model_path))
             val_dataloader = DataLoader(
                 val_fold,

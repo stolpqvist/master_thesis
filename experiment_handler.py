@@ -92,8 +92,14 @@ class ExperimentOrganiser:
                 dropout=self.dropout, 
                 epochs=self.epochs, 
                 batch_size=self.batch_size,
-                model=self.model_name
+                model=self.model_name,
+                boot=False
             )
+            print(f"The {self.model_name} model completed the test on {self.bg} dataset! \n \
+                    Accuracy: {acc}\n \
+                    F1-score: {f1} \n \
+                    Recall: {rec} \n \
+                    Precision: {prec}")
 
         if self.boot:
 
@@ -264,9 +270,13 @@ class ExperimentOrganiser:
         if boot:
             all_preds, all_labels, acc, prec, rec, f1 = trainer.evaluate(val_data=val_data, model=model, boot=boot)
             return all_preds, all_labels, acc, prec, rec, f1
+        if self.test:
+            _, _, acc, prec, rec, f1 = trainer.evaluate(val_data=val_data, model=model, bg=bg, boot=True)
+            return acc, prec, rec, f1
+
         
         else:
-            acc, prec, rec, f1 = trainer.evaluate(val_data, model, boot)
+            acc, prec, rec, f1 = trainer.evaluate(val_data=val_data, model=model, bg=bg, boot=boot)
             return acc, prec, rec, f1
 
     def save_model(self, model, file=None):

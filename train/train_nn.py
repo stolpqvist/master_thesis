@@ -162,7 +162,7 @@ class NNTrain:
 
         return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch    
 
-    def evaluate(self, val_data, model, boot=False):
+    def evaluate(self, val_data, model, bg=None, boot=False):
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         #if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
         if self.label2id is not None and self.id2label is not None:
@@ -173,13 +173,17 @@ class NNTrain:
             self.label2id = spt.label2id
             self.id2label = spt.id2label
             
-        if isinstance(model, str) and model.endswith('pt'):
+        if isinstance(model, str): 
 
             model_path = model
             num_classes = len(spt.label2id.keys())
 
             #model_name = model.split('/')[-1].split('_')[0] #does not work for windows
-            model_name = os.path.basename(model).split("_")[0] 
+            if boot:
+                model_name = os.path.basename(model).split("_")[0] 
+            else:
+                model_name = model
+                model_path = f'models/{model}/{model}_{bg}.pt' 
             print("this is model name", model_name)
             model_class = self.get_model(model_name)
             model = model_class(input_size=    spt.model.get_piece_size(),
