@@ -50,7 +50,7 @@ class SPTokenizer:
 
     def label_extractor(self, df) -> None:
 
-        for i, label in enumerate(np.unique(df[self.label].values)):
+        for i, label in enumerate(sorted(df[self.label].unique())):
             self.label2id[label] = i
             self.id2label[i] = label
 

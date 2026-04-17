@@ -45,7 +45,6 @@ class NNTrain:
 
 
     def training_loop(self, train_data, val_data):
-        print("This is in training looop", self.columns)
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
         #extract labels
@@ -165,7 +164,6 @@ class NNTrain:
 
     def evaluate(self, val_data, model, boot=False):
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
-        print("This is model in evaluate", model)
         #if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
         if self.label2id is not None and self.id2label is not None:
             spt.label2id = self.label2id  #reuse it
@@ -202,7 +200,7 @@ class NNTrain:
             batch_size= self.batch_size,
             shuffle=    not boot #not shuffle for boot
         )
-
+        print(not boot)
         model.eval()
 
 

@@ -40,9 +40,7 @@ class ExperimentOrganiser:
         self.organiser()
    
     def organiser(self):
-        print(self.emissions)
         if self.emissions:
-            print(self.emissions)
             from codecarbon import EmissionsTracker
             emission_tracker = EmissionsTracker(log_level='critical')
             emission_tracker.start()
@@ -86,15 +84,15 @@ class ExperimentOrganiser:
             #load the model from directory
 
             acc, prec, rec, f1 = self.evaluate(
-                self.df,
-                self.bg, 
-                self.columns, 
-                self.label, 
-                self.lr, 
-                self.dropout, 
-                self.epochs, 
-                self.batch_size,
-                model
+                val_data=self.df,
+                bg=self.bg, 
+                columns=self.columns, 
+                label=self.label, 
+                lr=self.lr, 
+                dropout=self.dropout, 
+                epochs=self.epochs, 
+                batch_size=self.batch_size,
+                model=self.model_name
             )
 
         if self.boot:
@@ -223,9 +221,8 @@ class ExperimentOrganiser:
         if not ph:
             if self.emissions:
                 emissions = emissions.stop()
-                print(emissions)
             with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
-                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq")
+                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq \n")
 
             
         return model, f1, acc, prec, rec, epoch
@@ -355,7 +352,7 @@ class ExperimentOrganiser:
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials = 25, callbacks=[save_trial]) #25 combinations
         if self.emissions:
-            emissions.stop()
+            emission.stop()
 
         #Here just write the best param
         with open(f"results/{self.model_name}/text/Results_param_hunt_{self.model_name}_{bg}.txt", 'a') as r_file:
@@ -363,7 +360,7 @@ class ExperimentOrganiser:
                 f"\n Best LR: {study.best_params['lr']:.6f} |"
                 f"Dropout: {study.best_params['dropout']:.4f}| "
                 f"F1: {study.best_value:.4f}\n"
-                f"Total Emissions: {emissions if self.emissions else {}}"
+                f"Total Emissions: {emission if self.emissions else {}} \n"
             )         
 
         

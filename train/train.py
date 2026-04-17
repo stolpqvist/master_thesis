@@ -170,7 +170,7 @@ class ModelTrain:
         total_losses = 0
         all_preds = []
         all_labels = []
-        
+        print(boot)        
         val_fold = DataProcessor(df=val_data, columns=self.columns, label=self.label)
         val_fold.label_extractor()
         

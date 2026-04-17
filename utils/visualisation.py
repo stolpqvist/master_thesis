@@ -30,8 +30,8 @@ class Visual:
 
                 print(model_name, save_file)
             
-                if self.save_path and os.path.exists(save_file):
-                    continue
+#                if self.save_path and os.path.exists(save_file):
+#                    continue
 
                 #n = len(self.model_names)
                 fig, ax = plt.subplots(figsize=(6, 5))

@@ -36,7 +36,7 @@ def main():
     parser.add_argument('-lr', type=float, default=0.00001)
     parser.add_argument('-e', type=int, default=10) #epochs
     parser.add_argument('--batch_size', '-bs', type=int, default=3)
-    parser.add_argument('-k', type=int, default=5)
+    parser.add_argument('-k', type=int, default=10)
     parser.add_argument('-tr', '--train', action='store_true', default=False)
     parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
     parser.add_argument('-test_size', type=float, default=0.1)  
@@ -88,9 +88,7 @@ def main():
         print(f"The label chosen is: {args.label}")
 
     df = pd.read_csv(file)    
-    print(args.emissions)
     config = Config.from_args(args)
-    print(config.emissions)
     exp = ExperimentOrganiser(df=df, config=config)
     
 
