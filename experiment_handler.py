@@ -42,7 +42,7 @@ class ExperimentOrganiser:
     def organiser(self):
         if self.emissions:
             from codecarbon import EmissionsTracker
-            emission_tracker = EmissionsTracker(log_level='critical')
+            emission_tracker = EmissionsTracker(log_level='critical', tracking_mode='machine')
             emission_tracker.start()
 
         if self.create_data:
@@ -209,7 +209,7 @@ class ExperimentOrganiser:
                     )
 
             model, f1,  acc, prec, rec, epoch = trainer.training_loop(train_fold, val_fold)
-            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}.pt')
+#            torch.save(model.state_dict(), f'models/{self.model_name}/{self.model_name}_{self.bg}.pt')
 
 
             fold_f1s.append(f1)
@@ -227,8 +227,10 @@ class ExperimentOrganiser:
         if not ph:
             if self.emissions:
                 emissions = emissions.stop()
-            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
-                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq \n")
+                print(f"The {self.model_name} produced emissions on {bg} dataset: \n \
+                        Emissions: {emissions}")
+#            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
+#                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq \n")
 
             
         return model, f1, acc, prec, rec, epoch

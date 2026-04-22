@@ -26,8 +26,8 @@ import torch
 COLUMN_BUDGETS = {
     "AnsökanTitel":         50,
     "AnsökanTitelEng":      50,
-    "Sammanfattning":       190,
-    "Populärbeskrivning":   190,
+    "Sammanfattning":       189,
+    "Populärbeskrivning":   189,
     "Nyckelord":            32,
 }
 

@@ -49,7 +49,7 @@ class ModelTrain:
             train_fold,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=3,
+            num_workers=0,
             pin_memory=False
         )
 
@@ -162,6 +162,7 @@ class ModelTrain:
                 best_rec = val_rec
             else:
                 return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
+        return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch
             
         
 
@@ -187,7 +188,7 @@ class ModelTrain:
                 val_fold,
                 batch_size =    self.batch_size,
                 shuffle =       False,
-                num_workers =   4,
+                num_workers =   0,
                 pin_memory =    False
                 )
         
@@ -196,7 +197,7 @@ class ModelTrain:
                     val_fold,
                     batch_size =    self.batch_size,
                     shuffle =       True,
-                    num_workers =   4,
+                    num_workers =   0,
                     pin_memory =    False
                     )
         model.eval()
