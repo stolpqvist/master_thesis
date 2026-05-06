@@ -7,7 +7,7 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score, con
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sig_test import SigTest
-
+import re
 class Visual:
         def __init__(self, bg, model_stats, model_preds, labels, label_names, pairwise_result=None, save_path="results"):
 
@@ -29,19 +29,23 @@ class Visual:
                 save_file = f"{self.save_path}/{model_name}/images/conf_matrix_{self.bg}.png"
 
                 print(model_name, save_file)
-            
-#                if self.save_path and os.path.exists(save_file):
-#                    continue
 
-                #n = len(self.model_names)
+                #sort label ids by the
+
+#                i
                 fig, ax = plt.subplots(figsize=(6, 5))
                 
                 #if n==1:
                 #    axes = [axes]
-                
+                        
+                sorted_label_names, sorted_labels = zip(*sorted(
+                    zip(self.label_names, range(len(self.label_names))),
+                        key=lambda x: [int(c) if c.isdigit() else c for c in re.split(r'(\d+)', x[0])]
+                        ))
+
                 #for ax, model_name in zip(axes, self.model_names):
                 preds = self.model_preds[model_name]
-                cm = confusion_matrix(self.labels, preds)
+                cm = confusion_matrix(self.labels, preds, labels=sorted_labels)
                 cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
 
                 sns.heatmap(
@@ -49,8 +53,8 @@ class Visual:
                     annot=cm,
                     fmt='d',
                     cmap='Blues',
-                    xticklabels=self.label_names,
-                    yticklabels=self.label_names,
+                    xticklabels=sorted_label_names,
+                    yticklabels=sorted_label_names,
                     vmin=0, vmax=1,
 
                     ax=ax

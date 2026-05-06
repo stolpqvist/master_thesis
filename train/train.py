@@ -183,7 +183,7 @@ class ModelTrain:
             if bg is not None:
                 model_path = f'models/{model_path}/{model_path}_{bg}.pt'
                 print(model_path)
-            model.load_state_dict(torch.load(model_path))
+            model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
             val_dataloader = DataLoader(
                 val_fold,
                 batch_size =    self.batch_size,
