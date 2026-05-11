@@ -45,6 +45,7 @@ Choose 'cnn', 'rnn', or 'roberta'. Note: training requires access to the SRC dat
 
 
 ## Project Structure
+```
 .
 ├── main.py                         # Entry point
 ├── config.py                       # Configuration dataclass
@@ -66,5 +67,5 @@ Choose 'cnn', 'rnn', or 'roberta'. Note: training requires access to the SRC dat
 └── utils/
     ├── path_manager.py             # Path management
     └── visualisation.py            # Confusion matrices, boxplots, F1 plots
-
+```
 Note: Data handling and splitting utilities are omitted due to aforementioned privacy status.
