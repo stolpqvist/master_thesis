@@ -5,6 +5,7 @@ memray-flamegraph-main.py.6114.html
 __pycache__/
 .DS_Store
 results/*
+results/
 models/*
 emissions.csv
 models/*
@@ -12,3 +13,4 @@ Results_MH_rnn.txt
 Results_UV_rnn.txt
 results.zip
 _*
+create_datasets/
