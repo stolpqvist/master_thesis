@@ -29,24 +29,24 @@ def check_col(file):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-bg', type=str, default=None)
-    parser.add_argument('--create_datasets', '-cd', action='store_true', default=False) 
-    parser.add_argument('-m',"--model",nargs='+', type=str, default='roberta') #model
-    parser.add_argument('-dr', type=float, default=0.1)
-    parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-e', type=int, default=10) #epochs
-    parser.add_argument('--batch_size', '-bs', type=int, default=2)
-    parser.add_argument('-k', type=int, default=10)
-    parser.add_argument('-tr', '--train', action='store_true', default=False)
-    parser.add_argument('--param_hunt', '-p', action='store_true', default=False)
-    parser.add_argument('-test_size', type=float, default=0.1)  
-    parser.add_argument('--test', action='store_true', default=False)     # Test size
-    parser.add_argument('-c','--columns', default=None, help='The data columns to be used for training model')
-    parser.add_argument('-l', '--label', default=None, help='The label column to be used for testing predictions')
-    parser.add_argument('-f', '--file', default=None)
-    parser.add_argument('-b', '--boot', action='store_true', default=False) 
-    parser.add_argument('-v', '--vis', action='store_true', default=False)
-    parser.add_argument('-em','--emissions', action='store_true', default=False)
+    parser.add_argument('-bg', type=str, default=None, help='The group the model should train on.')
+    parser.add_argument('--create_datasets', '-cd', action='store_true', default=False, help='Creates datasets for the models to be trained on, not available during thesis submission.') 
+    parser.add_argument('-m',"--model",nargs='+', type=str, default='roberta', help='Which model to train, only the flag --boot accepts multiple models during selection') #model
+    parser.add_argument('-dr', type=float, default=0.1, help='The dropout rate to be applied to the model.')
+    parser.add_argument('-lr', type=float, default=0.00001, help='The learning rate to be applied to the model.')
+    parser.add_argument('-e', type=int, default=10, help='Controls how many epochs to train over.') #epochs
+    parser.add_argument('--batch_size', '-bs', type=int, default=2, help='The amount of batches to load the data in.')
+    parser.add_argument('-k', type=int, default=10, help='The amount of K-folds to create.')
+    parser.add_argument('-tr', '--train', action='store_true', default=False, help='Enables training.')
+    parser.add_argument('--param_hunt', '-p', action='store_true', default=False, help='Enables hyperparameter optimisation.')
+    parser.add_argument('-test_size', type=float, default=0.1, help='During creation of datasets, controls test set size.')  
+    parser.add_argument('--test', action='store_true', default=False, help='Enables testing.')     # Test size
+    parser.add_argument('-c','--columns', default=None, help='The data columns to be used for training model.')
+    parser.add_argument('-l', '--label', default=None, help='The label column to be used for testing predictions.')
+    parser.add_argument('-f', '--file', default=None, help='Controls which file to read from if -bg is not present.')
+    parser.add_argument('-b', '--boot', action='store_true', default=False, help='Enables bootstrapping.') 
+    parser.add_argument('-v', '--vis', action='store_true', default=False, help='Enables visualisation.')
+    parser.add_argument('-em','--emissions', action='store_true', default=False, help='Enables emissions tracking.')
 
     args = parser.parse_args()
     if args.create_datasets and args.file is None:

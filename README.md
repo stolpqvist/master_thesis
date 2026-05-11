@@ -44,6 +44,40 @@ python3 main.py --train --model cnn
 Choose 'cnn', 'rnn', or 'roberta'. Note: training requires access to the SRC dataset, which cannot be shared due to its privacy status.
 
 
+To test a model:
+```bash
+python3 main.py --test --model cnn 
+```
+Note: This also has to be given the -bg flag
+
+The code also incorporates visualisation and emissions tracking:
+```bash
+python3 main.py --model cnn rnn roberta --boot --vis -em
+```
+
+The flag '--boot' enables bootstrapping, '--vis' enables visualisation, and '-em' controls emissions tracking.
+### Flags
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--model` | `-m` | Model(s) to use: `cnn`, `rnn`, `roberta`. Accepts multiple only for `--boot` |
+| `--train` | `-tr` | Enable training |
+| `--test` | | Enable testing |
+| `--boot` | `-b` | Enable bootstrapping |
+| `--vis` | `-v` | Enable visualisation |
+| `--emissions` | `-em` | Enable emissions tracking |
+| `--param_hunt` | `-p` | Enable hyperparameter optimisation |
+| `--batch_size` | `-bs` | Batch size (default: 2) |
+| `-k` | | Number of k-folds (default: 10) |
+| `-e` | | Number of epochs (default: 10) |
+| `-lr` | | Learning rate (default: 0.00001) |
+| `-dr` | | Dropout rate (default: 0.1) |
+| `-bg` | | Training group |
+| `--columns` | `-c` | Data columns to use |
+| `--label` | `-l` | Label column |
+| `--file` | `-f` | File to read from if `-bg` is not provided |
+
+
+
 ## Project Structure
 ```
 .
