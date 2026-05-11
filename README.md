@@ -44,4 +44,27 @@ python3 main.py --train --model cnn
 Choose 'cnn', 'rnn', or 'roberta'. Note: training requires access to the SRC dataset, which cannot be shared due to its privacy status.
 
 
+## Project Structure
+.
+├── main.py                         # Entry point
+├── config.py                       # Configuration dataclass
+├── experiment_handler.py           # Orchestrates experiments
+├── sig_test.py                     # Bootstrap and significance testing
+├── data_handling/
+│   └── strat_fold.py               # Stratified k-fold cross-validation
+├── model/
+│   ├── cnn.py                      # CNN model
+│   ├── rnn.py                      # Attention-based LSTM RNN model
+│   └── roberta.py                  # XLM-RoBERTa model
+├── preprocessing/
+│   ├── pre_nn.py                   # Preprocessing for CNN and RNN
+│   ├── pre_roberta.py              # Preprocessing for RoBERTa
+│   └── tokenizers/                 # Custom tokenisers
+├── train/
+│   ├── train.py                    # General training logic
+│   └── train_nn.py                 # CNN/RNN specific training
+└── utils/
+    ├── path_manager.py             # Path management
+    └── visualisation.py            # Confusion matrices, boxplots, F1 plots
 
+Note: Data handling and splitting utilities are omitted due to aforementioned privacy status.
