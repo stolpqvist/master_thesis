@@ -1,3 +1,4 @@
+"""This is the module for the CNN model."""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,7 +6,23 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import sys
 class ClassificationCNN(nn.Module):
+    """
+    This class deals with the setup and training of the CNN model.
 
+    Attributes:
+        cl_1 (nn.Conv1d) = The first convolutional layer.
+        cl_2 (nn.Conv1d) = The second convolutional layer.
+        cl_3 (nn.Conv1d) = The third convolutional layer.
+        cl_4 (nn.Conv1d) = The fourth convolutional layer.
+        input_projection (nn.Linear) = A intermetiate fully connected layer.
+        embedding (nn.Embedding) = The embedding layer.
+        inter_fc (nn.Linear) =  The last fully connected layer.
+        classificer (nn.Linear) = The actual classifier.
+        dropout (nn.Dropout) = The dropout layer.
+
+    Methods:
+        forward(application:torch.tensor)
+    """
     def __init__(self, input_size, num_classes, embedding_dim = 300, hidden_size = 512, dropout = 0.04):
         super().__init__()
         #Initialises convolutional layers with various amount of context.
@@ -27,7 +44,16 @@ class ClassificationCNN(nn.Module):
         #Initialises activation function.
         self.relu = nn.ReLU()
 
-    def forward(self, application:torch.tensor):
+    def forward(self, application:torch.tensor) -> torch.Tensor:
+        """
+        This method deals with forward pass for the CNN model.
+
+        Arguments:
+            application (torch.tensor) = The application to be processed.
+
+        Returns:
+            prediction
+        """
         emb = self.dropout(self.embedding(application)) 
         projected = self.relu(self.input_projection(emb))
         features = projected.permute(0, 2, 1)

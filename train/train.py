@@ -1,3 +1,6 @@
+"""
+This module handles the training, evaluation, and testing of the RoBERTa model.
+"""
 from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
 from torch.utils.data import DataLoader, TensorDataset
@@ -9,8 +12,32 @@ from transformers import get_cosine_schedule_with_warmup
 import copy
 
 class ModelTrain:
-    def __init__(self, columns, label, lr, n_epochs, batch_size, dropout, weight_decay=1e-4):
+    """
+    This class handles the training, evaluation, and testing of the RoBERTa model.
 
+    Arguments:
+        columns (list(str)) = The headers of the columns the be used for informating in training, evaluation and testing.
+        label (str) = The label header to be used to compared model predictions against.
+        lr (float) = The learning rate value to be applied.
+        epochs (int) = The number of epochs to train over.
+        batch_size (int) = The number of batches to split the data into for batch loading.
+        criterion (nn.CrossEntropyLoss) = The loss function to be used.
+        dropout (float) = The dropout rate to be applied for the model.
+        weight_decay (float) = The amount of weight decay to be applied to the model.
+        device (torch.device(cuda|mps|cpu)) = The device to be trained on.
+
+    Methods:
+        training_loop(data: pd.DataFrame, val_data:pd.DataFrame) -> nn.Module, float, float, float, float, int
+            Deals with the training loop for the model.
+
+        evaluate(model: str|nn.Module, val_data: pd.DataFrame, bg: str,boot: bool)
+            Handles the evaluation of the model.
+    
+
+
+    """
+    def __init__(self, columns:list(str), label:str, lr:float, n_epochs:int, batch_size:int, dropout:float, weight_decay:float=1e-4):
+        
         self.columns = columns
         self.label = label
 
@@ -29,17 +56,24 @@ class ModelTrain:
 
 
 
-    def training_loop(self, data, val_data):
-        #TODO Implement random parameter generation ✅
-        #TODO Implement writing to file ✅
-        #TODO Implement constructor that constructs folders as needed
-        #TODO Implement early stopping to reduce training time ✅
-        #TODO Implement model saving  ✅
-        print(f"Training on: {self.device}")
+    def training_loop(self, data: pd.DataFrame, val_data:pd.DataFrame) -> Tuple[nn.Module, float, float, float, float, int]:
+        """
+        This method handles the training and the subsequent evaluation of the model during training. It trains on K - 1 folds and
+        validates on 1 fold.
 
-        #extr num_labels
-        #train_labels = data[label_cl] #NOT tensors
-        #num_classes = len(np.unique(train_labels))
+        Arguments:
+            data (pd.DataFrame) = The training data to train the model on.
+            val_data (pd.DataFrame) = The validation data to evaluate the model on during training.
+        
+        Returns:
+            best_model (nn.Module) = The best performing model for a particular fold.
+            best_val_f1 (float) = The best F1-score achieved during a particular fold.
+            best_acc (float) = The best accuracy value achieved during a particular fold.
+            best_prec (float) = The best precision value achieved during a particular fold.
+            best_rec (float) = The best recall value achieved during a particular fold.
+            epoch (int) = The epoch in which the best scores were achieved.
+        """
+        print(f"Training on: {self.device}")
 
         #Prepare the data:
         train_fold = DataProcessor(data, self.columns, self.label)
@@ -164,10 +198,28 @@ class ModelTrain:
                 return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
         return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch
             
-        
+
+    def evaluate(self, model: str|nn.Module, val_data: pd.Dataframe, bg = None,boot=False):
+        """
+        This method handles the evaluation and testing of the RoBERTa model.
+
+        Arguments:
+            model (str|nn.Module) = Either the name of the model in string-format or the nn.Module class object.
+            val_data (pd.DataFrame) = A pandas dataframe containing the validation data or the testing data.
+            bg (str) = The particular subject matter group to be validated/tested on.
+            boot (bool) = A boolean that checks whether bootstrapping is being done or not, if true it returns predictions and labels.
 
 
-    def evaluate(self, model, val_data, bg = None,boot=False):
+        Returns:
+            accuracy (float) = The accuracy value for the validation fold or testing.
+            prec (float) = The precisions value for the vlidation fold or testing.
+            rec (float) = The recall value for the validation fold or testing.
+            f1 (float) = The F1-score for the validation fold or testing.
+            all_preds (list(int)) = If the condition is met, all the predictions are returned.
+            all_labels (list(int)) = If the conditoin is met, all the true labels are returned
+      
+
+        """
         total_losses = 0
         all_preds = []
         all_labels = []
@@ -183,7 +235,7 @@ class ModelTrain:
             if bg is not None:
                 model_path = f'models/{model_path}/{model_path}_{bg}.pt'
                 print(model_path)
-            model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
+            model.load_state_dict(torch.load(model_path))
             val_dataloader = DataLoader(
                 val_fold,
                 batch_size =    self.batch_size,

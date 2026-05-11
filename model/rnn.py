@@ -1,8 +1,22 @@
+"""
+This is the module for the RNN model and its attention layer.
+"""
 import torch
 import torch.nn as nn
 
 
 class RNN(nn.Module):
+    """
+    This class deals initialising the RNN model.
+
+    Attributes:
+        hidden_size (int) = The size of the hidden layer.
+        embedding (nn.Embedding) = The embedding layer.
+        dropout (nn.Dropout) = The dropout layer.
+        rnn (nn.LSTM) = The long short-term memory RNN model.
+        attn (nn.Module) = The attention layer.
+        classifier (nn.Linear) = The classifier layer.
+    """
     def __init__(self, input_size, hidden_size, num_classes, dropout):
         super(RNN, self).__init__()
 
@@ -16,8 +30,10 @@ class RNN(nn.Module):
 
         self.init_weights()
     
-    def init_weights(self):
-
+    def init_weights(self) -> None:
+        """
+        Initialises the weights for the RNN.
+        """
         #Embedding
         nn.init.uniform_(self.embedding.weight, -0.1, 0.1)
 
@@ -42,12 +58,10 @@ class RNN(nn.Module):
         nn.init.zeros_(self.classifier.bias)
         
 
-    def forward(self, input_tensor):
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         
         #LSTM with BOTH hidden state and cell state
         batch_size = input_tensor.size(0)
-        #print("We are in forward pass")
-        #print(f"[DEBUG] input shape: {input_tensor.shape}")  # add temporarily to verify
     
         hidden = torch.zeros(1, batch_size, self.hidden_size, device=input_tensor.device)
         cell = torch.zeros(1, batch_size, self.hidden_size, device=input_tensor.device)
@@ -57,47 +71,43 @@ class RNN(nn.Module):
         emb = self.dropout(emb)
         encoder_outputs, (hidden, cell) = self.rnn(emb, (hidden, cell))
 
-        #emb.permute(1, 0, 2)
-       
-        #encoder_outputs = encoder_outputs.permute(1, 0, 2)
-
-        #all_hiddens = []
-        #print(input_tensor.size(1))
-        #for i in range(input_tensor.size(1)): #iterate over seq_len, instead of batch
-            #emb = self.embedding(input_tensor[i]).view(1, 1, -1)
-            #emb = self.embedding(input_tensor[:, i]).unsqueeze(1)
-            #emb = self.dropout(emb)
-            #_, (hidden, cell) = self.rnn(emb, (hidden, cell))
-            #all_hiddens.append(hidden)
-
-        #print(all_hiddens)
-
-        #encoder_outputs = torch.cat(all_hiddens, dim=1) # (batch, seq_len, hidden_size)
-
-        #use final hidden state as query
-        #query = hidden.transpose(0, 1) # (batch, 1, hidden_size)
         query = hidden
         #attention and classifying
         context = self.attn(encoder_outputs, query)
-        #context = self.attn(context)
         context = context.squeeze(1)
         logits = self.classifier(context)
-        #print("We are in RNN")
+        print(f"This is the type of logits: {type(logits)}")
         return logits
     
 class AttentionConcat(nn.Module):
+    """
+    This class deals specifically with the attention layer for the RNN model.
 
+    Attributes:
+        attn (nn.Linear) = A linear layer.
+        vector (nn.Parameter) = A vector parameter layer.
+
+    Methods:
+        forward(output_enc, hidden_dec) -> torch.Tensor
+            Deals with the forward pass of the attention layer.
+    """
     def __init__(self, hidden_size):
         super(AttentionConcat, self).__init__()
 
         self.attn = nn.Linear(hidden_size * 2, hidden_size)
         self.vector = nn.Parameter(torch.rand(hidden_size))
     
-    def forward(self, output_enc, hidden_dec):
-        #output_enc: (1, seq_len, hidden_size) - all hidden states
-        #Hidden_dec: (1, 1, hidden_size) - the query (final hidden state)
-        #hidden_dec = hidden_dec.squeeze(0)
+    def forward(self, output_enc: torch.Tensor, hidden_dec: torch.Tensor) -> torch.Tensor:
+        """
+        This method deals with the forward pass of the attention layer.
 
+        Arguments:
+            output_enc (torch.Tensor) = Full hidden state.
+            hidden_dec (torch.Tensor) = Current hidden state at time t.
+
+        Returns:
+            ctx_vec (torch.Tensor) = The context vector.
+        """
         hidden_dec = hidden_dec.transpose(0, 1)
         len_source = output_enc.shape[1]
         hidden_dec = hidden_dec.repeat(1, len_source, 1)
@@ -107,5 +117,4 @@ class AttentionConcat(nn.Module):
         scores = torch.matmul(attention_energies, self.vector).unsqueeze(1)
         attn_weights = nn.Softmax(dim=-1)(scores)
         ctx_vec = torch.bmm(attn_weights, output_enc)
-
         return ctx_vec #(1, 1, hidden_size)

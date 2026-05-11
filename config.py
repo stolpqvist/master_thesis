@@ -1,3 +1,6 @@
+"""
+This module deals with input data and making sure it is of the correct type.
+"""
 from dataclasses import dataclass
 from enum import Enum
 from typing import Union
@@ -11,6 +14,28 @@ class Model(Enum):
 
 @dataclass
 class Config:
+    """
+    This class is a dataclass and checks the type of every value passed through this class, to check the type and whether extra
+    values have been passed.
+
+    Attributes:
+        model (list(str)) = The name of the models to be used.
+        k (int) = The amount of K-folds to split the data in.
+        batch_size (int) = The amount of batches for the data, i.e how much data to be loaded at once.
+        n_epochs (int) = The amount of epochs to be trained over.
+        lr (float) = The learning rate to be applied to the model.
+        drouput (float) = The dropout rate to be applied to the model.
+        bg (str) = The name of the subject matter group to be trained/tested on.
+        columns (list(str)) = The headers of columns to be used for information in training/testing.
+        label (str) = The label header to be used to compare the model's predictions against.
+        create_data (bool) = Boolean that controls whether to create a new dataset.
+        param_hunt (bool) =  Boolean that controls whether to do hyperparameter optimisations.
+        train (bool) = Boolean that controls whether to do training or not.
+        test (bool) = Boolean that controls whether or not to do testing.
+        boot (bool) = Boolean that controls whether or not to do bootstrapping.
+        vis (bool) = Boolean that controls whether or not to visualise the results or not.
+        emissions (bool) = Boolean that controls whether or not to track emissions.
+    """
     model:      Union[str, list]
     k:          int
     batch_size: int
@@ -30,6 +55,16 @@ class Config:
 
     @classmethod
     def from_args(cls, args) -> "Config":
+        """
+        This method controls whether the selected model exists in available models.
+
+        Arguments:
+            cls = The config dataclass.
+            args = The arguments passed from the config class.
+
+        Returns:
+            cls = The dataclass values.
+        """
         try:
             converted = [Model(m) for m in args.model]
         except ValueError:

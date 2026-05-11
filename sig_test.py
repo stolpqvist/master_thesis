@@ -1,3 +1,7 @@
+"""
+This module handles the significance testing, it offers both testing against chance and testing models against eachother with the
+subsequent Bonferroni correction to account for increasing rates of false positives.
+"""
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
@@ -12,6 +16,21 @@ from statsmodels.stats.multitest import multipletests
 
 class SigTest:
     def __init__(self, df, evaluate, models, bg, label, n_runs=10000):
+    """
+    This class handles the significance testing of the model, it can either test one or multiple models against chance, or against
+    eachother. It is also able to compare the models against eachother with a pairwise test with a subsequent Bonferroni correction.
+
+    Attributes:
+        test (pd.DataFrame) = A pandas dataframe with the file for the test set.
+        models (list(str)) = A list of the models to be used.
+        n_runs (int) = The amount of times to bootstrap.
+        evaluate (ExperimentOrganiser Object) = The method used for evaluation.
+        bg (str) = The dataset group that the model will be tested on.
+        n_classes (int) = The total amount of classes.
+        labels = The true labels to be compared against.
+        model_preds = The predictions of a model.
+
+    """
         self.test = df 
         self.models = models #a list of names
         self.n_runs = n_runs #10.000s
@@ -21,8 +40,15 @@ class SigTest:
         self.labels = None
         self.model_preds = None
     
-    def chance_test(self):
-        print(self.models)        
+    def chance_test(self) -> list[float]:
+        """
+        This method handles testing the models against chance.
+
+        Returns:
+            stats (list(float)) = The bootstrapping scores of the models.
+
+        """
+
         pm = PathManager()
         
         ModelResult = namedtuple('ModelResult', ['model_name', 'preds'])
@@ -67,11 +93,22 @@ class SigTest:
         #returen stats
         stats = self.bootstrap_stats(boot_scores, self.model_preds, self.labels)
         
-        print(stats)
         return stats
 
 
     def bootstrap_stats(self, boot_scores, preds_dict, labels, alpha=0.05):
+        """
+        This method handles the calculation of the p-value and confidence intervals.
+
+        Arguments:
+            boot_scores (list(float)) = list of boot scores that the models have already achieved.
+            preds_dict (dict) = A dictionary containing the predictions.
+            labels (list) = A list of all the actual labels.
+            alpha (float) = The alpha level to be used for this test
+        
+        Returns:
+            model_stats (dict) = A dictionary containing the model, mean_f1, confidence intervals, and p-value.
+        """
 
 
         ChanceResult = namedtuple('ChanceResult', ['model_name', 'mean_f1', 'ci_lower', 'ci_upper', 'p_value'])
@@ -100,6 +137,18 @@ class SigTest:
         return model_stats
     
     def compute_chance_pvalue(self, preds, labels, n_perm=1000):
+        """
+        This method handles the actual computation of the p-value.
+
+        Arguments:
+            preds = The predictions of a model.
+            labels = The actual labels to compare against.
+            n_perm (int) = The actual number of permutations to do.
+
+        Returns:
+            p_value (float): The p_value for the model's performance.
+            f1_obs (float) : The F1-score of a model.
+        """
 
         #observed score:
         _, _, f1_obs, _ = precision_recall_fscore_support(labels, preds, average='macro', zero_division=0)
@@ -122,7 +171,14 @@ class SigTest:
         return p_value, f1_obs
 
     def pairwise_test(self):
+        """
+        This method deals with testing the models against eachother.
 
+        Returns:
+            pairwise_results (list(dict)) = The results of models' performance being compared against eachother
+            model_stats (dict) = A dictionary with the performance of the models.
+
+        """
         model_stats = self.chance_test()
 
         #model_stats = self.bootstrap_stats(boot_scores)
@@ -167,7 +223,13 @@ class SigTest:
     
     def p_value_correction(self, pairwise_results):
         """
-        Bonferroni-based corrections
+        Bonferroni-based for the pairwise test.
+
+        Arguments:
+            pairwise_results (list) : The pairwise results when comparing model A to model B.
+
+        Returns:
+            pairwise_results (list) = The pairwise results with the added Bonferroni correction.
         """
 
         p_values = [r['p_value'] for r in pairwise_results]

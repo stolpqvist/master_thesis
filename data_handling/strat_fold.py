@@ -1,14 +1,34 @@
+"""This modules deals with the stratified K-fold cross evaluation."""
 from collections import defaultdict
 import numpy as np 
 
 class StratifiedFold:
+    """
+    This module deals with handling and splitting the dataset into K number of folds.
 
+    Attributes:
+        k (int) = The number of splits for the k-fold cross evaluation.
+        fold (list) = The fold indices.
+
+    Methods:
+        stratifier(df: pd.DataFrame, column:list[str]) -> None
+            Deals with stratifying and splitting the dataset into k-folds.
+
+        __iter__() -> list, list
+            Allows the user to iterate over the folds.
+    """
     def __init__(self, k=10):
         self.k = k
         self.folds = []
 
-    def stratifier(self, df, column):
+    def stratifier(self, df: pd.DataFrame, column: list[str]) -> None:
+        """
+        This method deals with both stratifying each fold and diving the dataset into folds.
 
+        Arguments:
+            df (pd.DataFrame) = A dataframe with the test to be split.
+            column (list(str)) = The list of the relevant columns from which information should be extracted.
+        """
         label2id = defaultdict(lambda: len(label2id))
 
         col_lab = df[column].values
@@ -53,6 +73,13 @@ class StratifiedFold:
 
             
 
-    def __iter__(self):
+    def __iter__(self) -> Tuple[list, list]:
+        """
+        This methods enables iteration through the training folds and validation folds.
+
+        Returns|Yields:
+            train_ids (list) = The indices for the training fold.
+            val_ids (list) = The indices for the validation fold.
+        """
         for train_ids, val_ids in self.folds:
             yield train_ids, val_ids

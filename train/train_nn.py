@@ -1,3 +1,6 @@
+"""
+This module handles the training, evaluation and testing of the CNN and the RNN with the class NNTrain.
+"""
 from preprocessing.pre_nn import SPTokenizer
 from model.rnn import RNN
 
@@ -10,7 +13,38 @@ import os
 from sklearn.metrics import precision_recall_fscore_support ,accuracy_score
 
 class NNTrain:
-    def __init__(self, model, lr, epochs, batch_size, dropout, hidden_size, columns, label):
+    """
+    This class handles the training, evaluation, and testing of the CNN and the RNN.
+
+    Attributes:
+        lr (float) = The learning rate to be applied to the model.
+        n_epochs (int) = The amount of epochs to train the model over.
+        batch_size (int) = The amount of batches to split the data into for batch loading.
+        dropout (float) = The dropout value to applied to the model.
+        hidden_size (int) = The size of the hidden layer.
+        columns (list(str)) = The column headers for information in training and testing.
+        label (str) = The label header to be used to compared model predictions against.
+        label2id (dict) = A dictionary converting class labels to integers.
+        id2label (dict) = A dictionary converting integers to class labels.
+        model_class (nn.Module | nn.Module) = The model to be used, either the CNN or the RNN.
+        patience (int) = The amount of times that are allowed for worse results before early stopping.
+        patience_count (int) = A counter that keeps track of how many times the model performed worse in n compared to n-1.
+        criterion (nn.CrossEntropyLoss) = The loss function to be applied.
+        device (cuda | mps | cpu) = The device to be used for training and testing.
+
+    Methods:
+        get_model(self, model:str)
+            -> nn.Module
+            Retrieves either the RNN class or CNN class.
+        training_loop(self, train_data:pd.DataFrame, val_data:pd.DataFrame)
+            -> nn.Module, float, float, float, float, int
+            Deals with the training and subsequent fold evaluation.
+        evaluate(self, val_data: pd.DataFrame, model:nn.Module|str, bg:str =None, boot: bool=False) 
+            -> float, float, float, float | list(int), list(int), float, float, float, float
+            Deals with the evaluation of either the validation fold or test set.
+    """
+
+    def __init__(self, model: str, lr: float, epochs: int, batch_size: int, dropout:float, hidden_size:int, columns:list(str), label:list(str)):
         self.lr = lr
         self.n_epochs = epochs
         self.batch_size = batch_size
@@ -32,7 +66,16 @@ class NNTrain:
         else:
             self.device = torch.device("cpu")
 
-    def get_model(self, model):
+    def get_model(self, model:str) -> nn.Module:
+        """
+        The model to be used for classification, either CNN or RNN.
+
+        Arguments:
+            model (str)= The name of the model, either CNN or RNN.
+
+        Returns:
+            model_class (nn.Module) = The model architecture.
+        """
         if model == 'cnn':
             from model.cnn import ClassificationCNN
             model_class = ClassificationCNN
@@ -44,7 +87,24 @@ class NNTrain:
 
 
 
-    def training_loop(self, train_data, val_data):
+    def training_loop(self, train_data:pd.DataFrame, val_data:pd.DataFrame) -> Tuple[nn.Module, float, float, float, float, int]: 
+        """
+        This method handles the training loop and the subsequent evaluation over K-folds.
+
+        Arguments:
+            train_data (pd.DataFrame) = A pandas dataframe containing the training data.
+            val_data (pd.DataFrame) = A pandas dataframe containing the validation data.
+
+        Returns:
+            best_model (nn.Module) = The best performing epoch of the model.
+            best_val_f1 (float) = The best F1-score for this particular fold.
+            best_acc (float) = The best accuracy value for this particular fold.
+            best_prec (float) = The best precisions value for this particular fold.
+            best_rec (float) = The best recall value for this particular fold.
+            epoch (int) = The epoch wherein the best values were achieved.
+
+        """
+
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
         
         #extract labels
@@ -162,9 +222,26 @@ class NNTrain:
 
         return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch    
 
-    def evaluate(self, val_data, model, bg=None, boot=False):
+    def evaluate(self, val_data: pd.DataFrame, model:nn.Module|str, bg:str =None, boot: bool=False) -> Tuple[float, float, float, float] | Tuple[list(int), list(int), float, float, float, float]:
+        """
+        This method handles the evaluation and testing of a model.
+
+        Arguments:
+            val_data (pd.DataFrame) = The pandas dataframe containing the validation or testing data.
+            model (str) = The model either the model name, or the path to a the particular model.
+            bg (str) = The name of the particular group to be evaluated or tested on.
+            boot (bool) = A boolean that determines whether or not to do bootstrapping.
+
+        Returns:
+            acc (float) = The accuracy value on the validation fold or on the testing data.
+            prec (float) = The precision value on the validation fold or on the testing data.
+            rec (float) = The recall value on the validation fold or on the testing data.
+            f1 (float) = The F1-score on the validation fold or testing data.
+            all_preds (list(int)) = If the conditions are met, all predictions are also returned.
+            all_labels (list(int)) = If the condistions are met, all the true labels are also returned.
+        """
+
         spt = SPTokenizer(self.columns, self.label, model="tokenizer")
-        #if hasattr(self, 'label2id') and hasattr(self, 'id2label'):
         if self.label2id is not None and self.id2label is not None:
             spt.label2id = self.label2id  #reuse it
             spt.id2label = self.id2label

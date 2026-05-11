@@ -1,16 +1,57 @@
-#TODO To make this class be able to handle and coordinate models
-#TODO To handle the different types of trainers
-#TODO To handle file writing and plot creation
-#TODO To handle parameter hunting for various models
-
+"""
+This module handles the organising of tieing together varies modules in order to test, train, evaluate, bootstrap, visualise 
+and to do hyperparameter optimisation.
+"""
 import pandas as pd
 from utils.path_manager import PathManager
 import torch
 from config import Config
 from functools import partial
-#TODO NEW:  3. weight decay number for RoBERTa 
 
 class ExperimentOrganiser:
+    """This class handles the organising of experiments by tieing together different modules for training, testing, bootstrapping,
+       and visualising. It takes the input from the config class and assigns the various instance variables accordingly.
+
+        Attributes:
+            bg (str) = The group that will be used for classifiction, i.e the subject matter group.
+            columns (list(str) = The columns from a pandas DataFrame that will be used as training material for the models.
+            label (str) = The label column that will be compared against the model's prediction.
+            lr (float) = The learning rate as a float value.
+            dropout (float) = The dropout rate as a float.
+            epochs (int) = The number of epochs for the model to train on.
+            batch_size (int) = The number of batches to split the data into.
+            k (int) = The number of splits into the dataset for a k-fold cross-evaluation.
+            create_datasets (bool) = Whether to create a new sets of data or not.
+            ph (bool) = Whether or not to do hyperparameter optimisation.
+            train (bool) = Whether to train a model or not.
+            test (bool) = Whether to test the model.
+            boot (bool) = Whether to do a bootstrapping test, and to do visualisation and to compare multiple models against eachother.
+            visual (bool) = Whether to visualise the results in a confusion matrix and boxplot.
+            emissions (bool) = Whether to track emissions or not.
+      
+      Methods:
+        organiser(self) -> None
+            Organises what to be done, whether testing, training, bootstrapping.
+
+        train_setup(bg: str, columns: list[str], label: str, lr: float, dropout: float, epochs: int, batch_size: int, 
+        ph: bool, emissions: bool) 
+            -> nn.Module, float, float, float, float, int
+                Sets up training for the particular model retrieved from user input.
+
+        evaluate(self, model: nn.Module, val_data:pd.DataFrame, bg: str, columns: list[str], label: str, lr: str,
+        dropout: str, epochs: int, batch_size: int, boot: bool)
+            -> list, list, float, float, float, float | float, float, float, float
+                Either evaluates a particular fold or evaluates on the test set.
+
+        save_model(model:nn.Module, file: str)-> None
+            Saves the model.
+
+        create_datasets(df: pd.DataFrame, columns: list[str], label: str) -> None
+            Creates the necessary datasets for training, evaluation and testing for all of the groups.
+
+        param_hunt(bg: str, columns: list[str], label: str, epochs: int, batch_size: int, emission: bool) -> None
+            Handles the hyperparameter optimisation with the optuna library. 
+    """
 
     def __init__(self, df: pd.DataFrame, config: Config):#model_name, bg, columns, label, lr, dropout, epochs, batch_size, create_data=False, param_hunt=False, train=False, test=False):
         self.df = df
@@ -39,7 +80,13 @@ class ExperimentOrganiser:
  
         self.organiser()
    
-    def organiser(self):
+    
+    def organiser(self) -> None:
+        """
+        This method deals with organising what to do, if to track emissions, create datasets, to train, to do hyperparameter
+        optimisation, to do testing, or to do bootstrapping with or without visualisation.
+        
+        """
         if self.emissions:
             from codecarbon import EmissionsTracker
             emission_tracker = EmissionsTracker(log_level='critical', tracking_mode='machine')
@@ -55,7 +102,7 @@ class ExperimentOrganiser:
             spt = SPTokenizer(self.columns, self.label, self.df)
             
 
-        if self.train:
+        if self.train: 
 
             model, f1,  acc, prec, rec, epoch = self.train_setup(
                                                                 self.bg, 
@@ -142,20 +189,30 @@ class ExperimentOrganiser:
                 vis.box_plot_f1()
                 #vis.plot_pairwise()
 
+    def train_setup(self, bg: str, columns: list[str], label: str, lr: float, dropout: float, epochs: int, batch_size: int, ph: bool=False, emissions: bool =False) -> Tuple[nn.Module, float, float, float, float, int]:
+        """
+        This method sets up the training and the subsequent evaluation of the validation fold.
 
-            
+        Args:
+        bg (str) = The dataset to be read and processed in terms of subject matter group.
+        columns (list(str)) = The columns to be used as training data from each row.
+        label (str) = The label column to be used to compare the model predictions against.
+        lr (float) = The learning rate for a particular model.
+        dropout (float) = The dropout rate for a particular model.
+        epochs (int) = The amount of epochs to train a model over.
+        batch_size (int) = The amount of batches to split the data over during training.
+        ph (bool) = A boolean value that determines whether to do hyperparamter optimsation.
+        emissions (bool) = A boolean value that determines whether or not to track emissions.
 
-        #    assert model_stats is not None, "Run boot first before visualising"
-        #   
+        Returns:
+            model (nn.Module) = The best model for the particular fold.
+            f1  (float) = The best validation F1-score for that particular set of folds.
+            acc (float) = The best validation accuracy score for that particular set of folds.
+            prec (float) = The best validation precision score for that particular set of folds.
+            rec (float) = The best validation recall score for that particular set of folds. 
+            epoch (int) = The epoch on which the best scores were achieved.
 
-        #    
-
-
-           
-        
-        
-    
-    def train_setup(self, bg, columns, label, lr, dropout, epochs, batch_size, ph=False, emissions=None):
+        """
         from data_handling.strat_fold import StratifiedFold
         
 
@@ -229,18 +286,47 @@ class ExperimentOrganiser:
                 emissions = emissions.stop()
                 print(f"The {self.model_name} produced emissions on {bg} dataset: \n \
                         Emissions: {emissions}")
-#            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
-#                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq \n")
+            with open(f"results/{self.model_name}/text/Results_{self.model_name}_{bg}.txt", 'a') as r_file:
+                r_file.write(f"Model, Dropout: {dropout}, LR: {lr}, Epochs: {epoch}, F1-Score: {mean_f1}, Accuracy: {mean_acc}, Precision: {mean_prec}, Recall: {mean_rec}, Emissions: {emissions if emissions is not None else ''} kg CO2eq \n")
 
             
         return model, f1, acc, prec, rec, epoch
         
 
 
-    def evaluate(self, model, val_data, bg, columns, label, lr, dropout, epochs, batch_size, boot=False):
+    def evaluate(self, model: nn.Module, val_data:pd.DataFrame, bg: str, columns: list[str], label: str, lr: str, dropout: str, epochs: int, batch_size: int, boot: bool=False) -> Tuple[list, list, float, float, float, float | float, float, float, float]:
+        """
+        This method handles the evaluation of the validation fold or separate testing.
+
+        Args:
+            Model (nn.Module) = The model to be trained
+            val_data (pandas.DataFrame) = A pandas dataframe containing the validation data or the testing data to be used.
+            bg (str) = The dataset to be read and processed in terms of subject matter group.
+            columns (list(str)) = The columns to be used as training data from each row.
+            label (str) = The label column to be used to compare the model predictions against.
+            lr (float) = The learning rate for a particular model.
+            dropout (float) = The dropout rate for a particular model.
+            epochs (int) = The amount of epochs to train a model over.
+            batch_size (int) = The amount of batches to split the data over during training.
+            boot (bool) = A boolean that determines whether or not to do bootstrapping.
+
+        Returns:
+            When bootstrapping:
+                all_preds (list) = The list of predictions from the model.
+                all_labels (list) = The list of true labels.
+                acc (float) = The accuracy value achieved during evaluation.
+                prec (float) = The precision vlaue achieved during evaluation.
+                rec (float) = The recall value achieved during evaluation.               
+                f1 = The F1-score achieved during evaluation.
+            else:
+                acc (float) = The accuracy value achieved during evaluation.
+                prec (float) = The precision vlaue achieved during evaluation.
+                rec (float) = The recall value achieved during evaluation.
+                f1 (float) = The F1-score achieved during evaluation.
+
+        """
         import os
         current_model = os.path.basename(model).split('_')[0]
-
         if current_model != 'roberta':
             from train.train_nn import NNTrain
 
@@ -281,14 +367,29 @@ class ExperimentOrganiser:
             acc, prec, rec, f1 = trainer.evaluate(val_data=val_data, model=model, bg=bg, boot=boot)
             return acc, prec, rec, f1
 
-    def save_model(self, model, file=None):
+    def save_model(self, model, file=None) -> None:
+        """
+        This method handles the saving of a model.
+
+        model = The model that is going to be saved.
+        file (str) = The string value representing a file path to where the model should be saved
+        """
+
         if file is None:
             file = f"models/{self.model_name}/{self.model_name}_{self.bg}.pt"
         torch.save(model.state_dict(), file)
 
 
-    def create_datasets(self, df, columns, label):
+    def create_datasets(self, df:pd.DataFrame, columns: list[str], label: str) -> None:
+        """
+        This method handles the creating of datasets, separates a full dataset into smaller datasets one for each subject matter group.
 
+        df (pd.DataFrame) = The pandas dataframe containing the full dataset to be split.
+        columns (list(str)) = A list of columns to be extracted for the smaller datasets.
+        label (str) = The label column containing the labels to be compared against the models predictions.
+
+
+        """
         from create_datasets.split_dataset import GroupSplit
         from sklearn.model_selection import  train_test_split
 
@@ -317,8 +418,17 @@ class ExperimentOrganiser:
 
         print("Datasets created.")
 
-    def param_hunt(self, bg, columns, label, epochs, batch_size, emission = None):
+    def param_hunt(self, bg: str, columns: list[str], label: str, epochs: int, batch_size: int, emission: bool = None) -> None:
+        """
+        This method handles the hyperparameter optimisation by leveraging the optuna library.
 
+        Args:
+            bg (str) = The dataset to be read and processed in terms of subject matter group.
+            columns (list(str)) = The columns to be used as training data from each row.
+            label (str) = The label column to be used to compare the model predictions against.
+            batch_size (int) = The amount of batches to split the data over during training.
+            emission (boolean) = A boolean value that determines whether or not to track emissions.
+        """
         import optuna 
         
 
