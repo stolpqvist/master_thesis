@@ -1,3 +1,6 @@
+"""
+This module handles the training, evaluation, and testing of the RoBERTa model.
+"""
 from preprocessing.pre_roberta import DataProcessor
 from model.roberta import CustomXLMRoberta
 from torch.utils.data import DataLoader, TensorDataset
@@ -7,9 +10,37 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 from transformers import get_cosine_schedule_with_warmup
 import copy
+import pandas as pd
 
 class ModelTrain:
-    def __init__(self, lr, n_epochs, batch_size, dropout, weight_decay):
+    """
+    This class handles the training, evaluation, and testing of the RoBERTa model.
+
+    Arguments:
+        columns (list(str)) = The headers of the columns the be used for informating in training, evaluation and testing.
+        label (str) = The label header to be used to compared model predictions against.
+        lr (float) = The learning rate value to be applied.
+        epochs (int) = The number of epochs to train over.
+        batch_size (int) = The number of batches to split the data into for batch loading.
+        criterion (nn.CrossEntropyLoss) = The loss function to be used.
+        dropout (float) = The dropout rate to be applied for the model.
+        weight_decay (float) = The amount of weight decay to be applied to the model.
+        device (torch.device(cuda|mps|cpu)) = The device to be trained on.
+
+    Methods:
+        training_loop(data: pd.DataFrame, val_data:pd.DataFrame) -> nn.Module, float, float, float, float, int
+            Deals with the training loop for the model.
+
+        evaluate(model: str|nn.Module, val_data: pd.DataFrame, bg: str,boot: bool)
+            Handles the evaluation of the model.
+    
+
+
+    """
+    def __init__(self, columns: list[str], label:str, lr:float, n_epochs:int, batch_size:int, dropout:float, weight_decay:float=1e-4):
+        
+        self.columns = columns
+        self.label = label
 
         self.lr = lr
         self.epochs = n_epochs
@@ -26,27 +57,34 @@ class ModelTrain:
 
 
 
-    def training_loop(self, data, val_data, label_cl):
-        #TODO Implement random parameter generation ✅
-        #TODO Implement writing to file ✅
-        #TODO Implement constructor that constructs folders as needed
-        #TODO Implement early stopping to reduce training time ✅
-        #TODO Implement model saving  ✅
+    def training_loop(self, data: pd.DataFrame, val_data:pd.DataFrame) -> tuple[nn.Module, float, float, float, float, int]:
+        """
+        This method handles the training and the subsequent evaluation of the model during training. It trains on K - 1 folds and
+        validates on 1 fold.
+
+        Arguments:
+            data (pd.DataFrame) = The training data to train the model on.
+            val_data (pd.DataFrame) = The validation data to evaluate the model on during training.
+        
+        Returns:
+            best_model (nn.Module) = The best performing model for a particular fold.
+            best_val_f1 (float) = The best F1-score achieved during a particular fold.
+            best_acc (float) = The best accuracy value achieved during a particular fold.
+            best_prec (float) = The best precision value achieved during a particular fold.
+            best_rec (float) = The best recall value achieved during a particular fold.
+            epoch (int) = The epoch in which the best scores were achieved.
+        """
         print(f"Training on: {self.device}")
 
-        #extr num_labels
-        #train_labels = data[label_cl] #NOT tensors
-        #num_classes = len(np.unique(train_labels))
-
         #Prepare the data:
-        train_fold = DataProcessor(data)
+        train_fold = DataProcessor(data, self.columns, self.label)
         train_fold.label_extractor()
 
         train_dataloader = DataLoader(
             train_fold,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=3,
+            num_workers=0,
             pin_memory=False
         )
 
@@ -131,7 +169,7 @@ class ModelTrain:
                 all_preds.extend(preds.cpu().tolist())
                 all_labels.extend(b_labels.cpu().tolist())
             
-            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data, label_cl)
+            val_acc, val_prec, val_rec, val_f1 = self.evaluate(model, val_data)
             #accuracy per epoch
             accuracy = accuracy_score(all_labels, all_preds)
             prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division=0)
@@ -158,30 +196,65 @@ class ModelTrain:
                 best_prec = val_prec
                 best_rec = val_rec
             else:
-                return best_val_f1, best_acc, best_prec, best_rec, epoch
-        
-        return best_val_f1, best_acc, best_prec, best_rec, epoch
+                return best_model, best_val_f1, best_acc, best_prec, best_rec, epoch
+        return best_model,best_val_f1, best_acc, best_prec, best_rec, epoch
             
- 
-        
+
+    def evaluate(self, model: str|nn.Module, val_data: pd.DataFrame, bg = None,boot=False):
+        """
+        This method handles the evaluation and testing of the RoBERTa model.
+
+        Arguments:
+            model (str|nn.Module) = Either the name of the model in string-format or the nn.Module class object.
+            val_data (pd.DataFrame) = A pandas dataframe containing the validation data or the testing data.
+            bg (str) = The particular subject matter group to be validated/tested on.
+            boot (bool) = A boolean that checks whether bootstrapping is being done or not, if true it returns predictions and labels.
 
 
-    def evaluate(self, model, val_data, label_cl):
-        model.eval()
+        Returns:
+            accuracy (float) = The accuracy value for the validation fold or testing.
+            prec (float) = The precisions value for the vlidation fold or testing.
+            rec (float) = The recall value for the validation fold or testing.
+            f1 (float) = The F1-score for the validation fold or testing.
+            all_preds (list(int)) = If the condition is met, all the predictions are returned.
+            all_labels (list(int)) = If the conditoin is met, all the true labels are returned
+      
+
+        """
         total_losses = 0
         all_preds = []
         all_labels = []
-        
-        val_fold = DataProcessor(val_data)
+        val_fold = DataProcessor(df=val_data, columns=self.columns, label=self.label)
         val_fold.label_extractor()
-
-        val_dataloader = DataLoader(
+        
+        if boot:
+            model_path = model
+            model = CustomXLMRoberta(
+                    num_classes=len(val_fold.label2id.keys()),
+                    hidden_dropout=self.dropout
+                ).to(self.device)   
+            if bg is not None:
+                model_path = f'models/{model_path}/{model_path}_{bg}.pt'
+                print(model_path)
+            model.load_state_dict(torch.load(model_path, map_location=self.device))
+            val_dataloader = DataLoader(
                 val_fold,
                 batch_size =    self.batch_size,
-                shuffle =       True,
-                num_workers =   4,
+                shuffle =       False,
+                num_workers =   0,
                 pin_memory =    False
                 )
+        
+        else:
+            val_dataloader = DataLoader(
+                    val_fold,
+                    batch_size =    self.batch_size,
+                    shuffle =       True,
+                    num_workers =   0,
+                    pin_memory =    False
+                    )
+        model.eval()
+        
         with torch.no_grad():
             for fields, b_labels in val_dataloader:
                 fields = {k: v.to(self.device) for k,v in fields.items()}
@@ -198,8 +271,10 @@ class ModelTrain:
                 all_labels.extend(b_labels.cpu().tolist())
         accuracy = accuracy_score(all_labels, all_preds)
         prec, rec, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='macro', zero_division = 0)
-
-        return accuracy, prec, rec, f1
+        if boot:
+            return all_preds, all_labels, accuracy, prec, rec, f1
+        else:    
+            return accuracy, prec, rec, f1
       
 
 

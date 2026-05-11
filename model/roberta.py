@@ -1,3 +1,6 @@
+"""
+This module deals with the implementation and initialisation of the xlm-roberta-base model.
+"""
 import torch
 from transformers import AutoModel, AutoConfig
 import torch.nn as nn
@@ -6,7 +9,26 @@ from preprocessing.pre_roberta import DataProcessor
 
 
 class CustomXLMRoberta(nn.Module):
-    def __init__(self, num_classes, model_name="xlm-roberta-base", hidden_dropout=0.1, pooling="cls"):
+    """
+    This class handles the initialisation and implementation of the xlm-roberta-base model.
+
+    Attributes:
+        config (AutoConfig.Config) = The configuration for the xlm-roberta-base model
+        backbone (AutoModel.model) = The backbone of the model.
+        pooling_strategy (str) = Which pooling strategy to implement.
+        hidden (int) = The size of the hidden layer.
+        dropout (nn.Dropout) = The dropout layer.
+        projection (nn.Linear) = The projection layer.
+        classifier (nn.Linear) = The classifier layer.
+
+    Methods:
+        pool(hidden_states, attention_mask) ->
+
+        forward(fields) ->
+            Deals with the forward pass and classification for the model.
+
+    """
+    def __init__(self, num_classes: int, model_name: str="xlm-roberta-base", hidden_dropout: float =0.1, pooling: str="cls"):
         super().__init__()
 
         self.config = AutoConfig.from_pretrained(model_name)
@@ -19,7 +41,19 @@ class CustomXLMRoberta(nn.Module):
         self.classifier = nn.Linear(256, num_classes)
     
     
-    def pool(self, hidden_states, attention_mask):
+    def pool(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+        """
+        This method utilises the pooling strategy requested and returns
+        pooled contents.
+
+        Arguments:
+            hidden_states () =
+            attention_mask () =
+
+        Returns:
+            hidden_states[:,0,:] () = If conditions are met.
+            summed/counts () =
+        """
         if self.pooling_strategy == "cls":
             return hidden_states[:, 0, :]
         else: #mean pooling
@@ -28,8 +62,16 @@ class CustomXLMRoberta(nn.Module):
             counts = mask.sum(dim=1).clamp(min=1e-9) #avoid division by zero
             return summed/counts
 
-    def forward(self, fields):
+    def forward(self, fields:dict) -> torch.Tensor:
+        """
+        This method deals with the forward pass of the model for classification purposes.
 
+        Arguments:
+            fields (torch.Tensor) = The fields selected for this application.
+
+        Returns:
+            torch.Tensor = The output of the classification process.
+        """
         outputs = self.backbone(
             input_ids = fields["input_ids"],
             attention_mask= fields["attention_mask"],
@@ -38,46 +80,5 @@ class CustomXLMRoberta(nn.Module):
 
         pooled = self.pool(outputs.last_hidden_state, fields["attention_mask"])
         projected= self.projection(self.dropout(pooled))
-
         return self.classifier(self.dropout(projected))
-        #fields: list of 5 dicts, each with input_ids and attention_mask of shape (batch, 512)
-
-        #stacking all fields into one big batch: (batch *5, 512)
-       #all_input_ids = torch.cat([f["input_ids"] for f in fields], dim=0)
-        #all_masks = torch.cat([f["attention_mask"] for f in fields], dim=0)
-        
-        
-        #One forward pass through xlm-r
-        #outputs = self.backbone(
-        #    input_ids = all_input_ids,
-        #    attention_mask = all_masks,
-        #    return_dict = True
-        #)
-        
-        #pool into one vector per (sample, field) -> (batch*5, 768)
-        #pooled = self.pool(outputs.last_hidden_state, all_masks)
-
-        #project dowm (batch*5, 256)
-        #pooled = self.projection(self.dropout(pooled))
-
-        #split back into fields and stack -> (batch, 5, 256)
-        #cls_per_field = pooled.chunk(len(fields), dim=0)
-        #stacked = torch.stack(cls_per_field, dim=1)
-
-        #field attention -> weighted sum -> (batch, 256)
-        #scores = self.field_attention(stacked) #(batch, 5, 1)
-        #weights = torch.softmax(scores, dim=1)
-        #combined = (weights * stacked).sum(dim=1) #batch, 256)
-
-        #classify
-        #return self.classifier(self.dropout(combined)) #(batch, num_classes)
-
-
-        
-#What we could do
-#Build a custom class for the roberta
-#In the class:
-    # Run through the process of setting it up
-    # Fix the vocabulary, unless it is shared amongst other classes
-    # At which point we would create a separate class for it
-
+  

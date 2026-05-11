@@ -1,20 +1,5 @@
 """
-This module is the main module that handles the preprocessing required for the RoBERTa model.
-It takes a filename when creating the class, then handles id creation and preprocessing.
-It outputs a stacked tensor.
-
-Class:
-    DataProcessor: handles the data preprocessing of the roberta model.
-
-Attributes:
-    file(str): the filename/path to dataset.
-    label2id(defaultdict(int)): the label to id assigner that defines the id as the length of the dictionary.
-    tokenizer (AutoTokenizer) = the tokenizer chosen for the XLMRobertaForSequenceClassification model.
-
-Returns:
-    row_yielder = yields a row in a dataframe.
-    preprocessing = returns a list of tokenized torch.Tensors.
-
+This module is the main module that handles the preprocessing required for the XLM-RoBERTa model.
 """
 import pandas as pd
 from torch.utils.data import Dataset
@@ -40,49 +25,58 @@ class DataProcessor(Dataset):
     This class handles dataprocessing of the RoBERTa model.
 
     Attributes:
-        file, str = the path to a particular file
-        label2id, defaultdict(int) = the labels and their corresponding id's
-        id2label, dict = the ids and their corresponding labels
-        tokenizer, AutoTokenizer = the tokenizer chosen for the XLMRobertaForSequenceClassification model
+        df (pd.DataFrame) = the path to a particular file.
+        label2id (dict) = the labels and their corresponding id's.
+        id2label (dict) = the ids and their corresponding labels.
+        tokeniser (AutoTokenizer) = the tokenizer chosen for the XLMRobertaForSequenceClassification model.
+        text_columns (list(str)) = The columns of information to predict classes on.
+        label_column (str) = The label header to be used for comparing model comparisons against.
 
     Methods:
-        row_yielder = Opens and reads chosen dataframe and yields row by row
-        preprocessing = Processes the dataframe,
+        label_extractor() Extracts the labels and converts them into integer:label pairs and label:integer pairs.
+        pretokenise() Tokenises the text.
+        __len__() Returns the length of samples.
+        __getitem__(idx(int)) Retrieves a specific item at a specific index.
     """
-    def __init__(self, df):
+    def __init__(self, df: pd.DataFrame, columns: list[str], label: str) -> None:
         self.df = df
         self.label2id = {} #defaultdict(lambda: len(self.label2id))
         self.id2label = {}
-        self.tokenizer = AutoTokenizer.from_pretrained('xlm-roberta-base')
-        self.text_columns = ["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
-        self.label_column = 'TilldeladBeredningsgruppKortNamn'
+        self.tokeniser = AutoTokenizer.from_pretrained('xlm-roberta-base')
+        self.text_columns = columns #["AnsökanTitel", "AnsökanTitelEng", "Sammanfattning", "Populärbeskrivning", "Nyckelord"] 
+        self.label_column = label #'TilldeladBeredningsgruppKortNamn'
 
 
     def label_extractor(self) -> None:
         """
-        Extracts the labels and enters it into a defauldict to handle label -> id and
-        id -> label assignment.
+        Extracts the labels and converts them to integer:label and label:integer pairs.
+
+        Returns:
+            None
         """
 
         #add to labels
-        for i, label in enumerate(np.unique(self.df[self.label_column].values)):
+        for i, label in enumerate(sorted(self.df[self.label_column].unique())):
             self.label2id[label] = i
             self.id2label[i] = label
 
-        self._pretokenize()
-        del self.df #delete after tokenizing
+        self.pretokenise()
+        del self.df #delete after tokenising
 
-    def _pretokenize(self):
-        print("Pre-tokenizing..")
+    def pretokenise(self) -> None:
+        """
+        Tokenises the dataframe and columns provided at class init.
+        """
+        print("Pre-tokenising..")
 
         self.samples = []
         for idx in range(len(self.df)):
             row = self.df.iloc[idx]
-            all_input_ids = [torch.tensor([self.tokenizer.cls_token_id])]
+            all_input_ids = [torch.tensor([self.tokeniser.cls_token_id])]
             all_attention_masks = [torch.tensor([1])]
 
             for col, budget in COLUMN_BUDGETS.items():
-                tok = self.tokenizer(
+                tok = self.tokeniser(
                     str(row[col]),
                     max_length=budget,
                     truncation = True,
@@ -94,7 +88,7 @@ class DataProcessor(Dataset):
                 all_input_ids.append(tok["input_ids"].squeeze(0))
                 all_attention_masks.append(tok["attention_mask"].squeeze(0))
         
-            all_input_ids.append(torch.tensor([self.tokenizer.sep_token_id]))
+            all_input_ids.append(torch.tensor([self.tokeniser.sep_token_id]))
             all_attention_masks.append(torch.tensor([1]))
 
             label = self.label2id[row[self.label_column]]
@@ -109,44 +103,21 @@ class DataProcessor(Dataset):
 
         print(f"Done. {len(self.samples)} samples ready")
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """
+        Gets the length of the samples to be processed.
+        """
         return len(self.samples)
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict: 
+        """
+        Retrieves a sample at a specific index.
+
+        Arguments:
+            idx (int) = The integer for the specific index position.
+
+        Returns:
+            self.samples[idx] = The samples at a given index position.
+        """
         return self.samples[idx]
-    
-        #row = self.df.iloc[idx]
-        
-        #all_input_ids = [torch.tensor([self.tokenizer.cls_token_id])]
-        #all_attention_masks = [torch.tensor([1])]
-        
-
-        #for col, budget in COLUMN_BUDGETS.items():
-        #    tok = self.tokenizer(
-        #        str(row[col]),
-        #       max_length=budget,
-        #        truncation = True,
-        #        padding = "max_length",
-        #        add_special_tokens = False,
-        #        return_tensors="pt"
-        #    )
-
-        #    all_input_ids.append(tok["input_ids"].squeeze(0))
-        #    all_attention_masks.append(tok["attention_mask"].squeeze(0))
-        
-        #all_input_ids.append(torch.tensor([self.tokenizer.sep_token_id]))
-        #all_attention_masks.append(torch.tensor([1]))
-
-        #label = self.label2id[row[self.label_column]]
-
-        #return {
-        #    "input_ids": torch.cat(all_input_ids),
-        #    "attention_mask": torch.cat(all_attention_masks)
-        #}, torch.tensor(label, dtype=torch.long)
-
-    
-     
-
-
-
-    
+   
